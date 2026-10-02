@@ -1,0 +1,128 @@
+/**
+ * Mosty — Premium monochrome design system (Notion / Stripe–like)
+ * Single source of truth for static UIs: chat, dashboards, outfit builder.
+ * No blue primaries: hierarchy via contrast, weight, shadow, spacing.
+ */
+
+:root {
+  /* ── Neutrals (primary identity) ───────────────────────────────── */
+  --mosty-black: #000000;
+  --mosty-near-black: #111111;
+  --mosty-depth: #1a1a1a;
+  --mosty-charcoal: #333333;
+  --mosty-muted: #555555;
+  --mosty-gray: #6b7280;
+  --mosty-gray-light: #9ca3af;
+  --mosty-border-solid: #e5e5e5;
+  --mosty-bg-soft: #f8f9fa;
+  --mosty-bg-panel: #f3f4f6;
+  --mosty-bg-hover: #eceeef;
+  --mosty-white: #ffffff;
+
+  /* ── Semantic aliases (chat / shared) ──────────────────────────── */
+  --bg-base: var(--mosty-bg-soft);
+  --bg-subtle: var(--mosty-white);
+  --bg-card: var(--mosty-white);
+  --bg-elevated: var(--mosty-bg-panel);
+  --bg-hover: var(--mosty-bg-hover);
+  --bg-input: var(--mosty-white);
+  --bg-deep: var(--mosty-bg-soft);
+  --bg-surface: var(--mosty-bg-panel);
+
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border: rgba(0, 0, 0, 0.1);
+  --border-hover: rgba(0, 0, 0, 0.16);
+  --border-focus: rgba(0, 0, 0, 0.38);
+
+  --text-primary: var(--mosty-black);
+  --text-secondary: var(--mosty-muted);
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+
+  --text: var(--text-primary);
+  --tx: var(--text-primary);
+  --tx2: var(--text-secondary);
+  --tx3: var(--text-muted);
+
+  --accent: var(--mosty-black);
+  --accent-hover: var(--mosty-depth);
+  --accent-light: var(--mosty-charcoal);
+  --accent2: var(--mosty-depth);
+  --accent-dim: rgba(0, 0, 0, 0.06);
+  --accent-glow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+  --gradient-accent: linear-gradient(135deg, var(--mosty-depth), var(--mosty-black));
+  --gradient-user: linear-gradient(135deg, var(--mosty-black) 0%, var(--mosty-depth) 100%);
+
+  /* Semantic status (keep for WCAG on alerts / KPIs; not for primary CTAs) */
+  --success: #15803d;
+  --error: #b91c1c;
+  --warn: #854d0e;
+  --pass: #15803d;
+  --fail: #b91c1c;
+  --pass-bg: rgba(21, 128, 61, 0.1);
+  --warn-bg: rgba(133, 77, 14, 0.08);
+  --fail-bg: rgba(185, 28, 28, 0.08);
+
+  /* Charts / neutral KPIs (never “blue” — cool gray ramp) */
+  --chart-neutral: #374151;
+  --chart-neutral-mid: #6b7280;
+  --chart-neutral-bg: rgba(55, 65, 81, 0.08);
+  --legacy-blue: var(--chart-neutral);
+  --legacy-blue-bg: var(--chart-neutral-bg);
+
+  /* Commerce / outfit compact aliases */
+  --bg: var(--bg-base);
+  --bg2: var(--bg-subtle);
+  --bg3: var(--bg-elevated);
+  --bg4: var(--bg-hover);
+  --card: var(--bg-subtle);
+  --elev: var(--bg-elevated);
+  --muted: var(--text-secondary);
+  --border-commerce: var(--mosty-border-solid);
+  --radius: 10px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border-subtle);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--border-subtle);
+  --accent-g: #15803d;
+  --accent-r: #b91c1c;
+  --accent-y: #854d0e;
+  --accent-cyan: #374151;
+  --accent-pink: #525252;
+  --err: #b91c1c;
+
+  /* Radius scale */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 24px;
+  --r-full: 9999px;
+  --r: 10px;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+  /* Motion */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 0.15s;
+  --dur-base: 0.25s;
+  --dur-slow: 0.4s;
+}
+
+.attach-btn,
+.settings-btn + div,
+.chip-row,
+.model-tag,
+.sidebar-foot,
+.item-share,
+.product-score-row,
+.product-reason {
+  display: none !important;
+}

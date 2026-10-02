@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "feature": "outfit_builder",
+  "page": {
+    "title": "Outfit Builder",
+    "subtitle": "Συνδύασε κομμάτια από το catalog"
+  },
+  "slots": [
+    { "id": "top", "label": "Πάνω μέρος" },
+    { "id": "bottom", "label": "Κάτω μέρος" },
+    { "id": "shoes", "label": "Παπούτσια" },
+    { "id": "outerwear", "label": "Πανωφόρι" },
+    { "id": "accessory", "label": "Αξεσουάρ" }
+  ],
+  "context": {
+    "occasions": [
+      { "value": "", "label": "Περίσταση — όλα" },
+      { "value": "casual", "label": "Casual" },
+      { "value": "work", "label": "Εργασία" },
+      { "value": "date", "label": "Ραντεβού" },
+      { "value": "event", "label": "Εκδήλωση" }
+    ],
+    "seasons": [
+      { "value": "", "label": "Εποχή — όλα" },
+      { "value": "ss", "label": "Άνοιξη/Καλοκαίρι" },
+      { "value": "fw", "label": "Φθινόπωρο/Χειμώνας" }
+    ],
+    "styles": [
+      { "value": "", "label": "Στυλ — όλα" },
+      { "value": "minimal", "label": "Minimal" },
+      { "value": "streetwear", "label": "Streetwear" },
+      { "value": "formal", "label": "Επίσημο" },
+      { "value": "smart casual", "label": "Smart casual" }
+    ]
+  },
+  "strings": {
+    "searchPlaceholder": "Αναζήτηση σε αυτό το slot…",
+    "suggestions": "Προτάσεις",
+    "warnings": "Σημειώσεις",
+    "save": "Αποθήκευση",
+    "randomize": "Τυχαίο outfit",
+    "reset": "Επαναφορά",
+    "undo": "Αναίρεση",
+    "redo": "Επανάληψη",
+    "shareCopied": "Ο σύνδεσμος αντιγράφηκε",
+    "saved": "Αποθηκεύτηκε",
+    "needKey": "Χρειάζεται API key για αναζήτηση",
+    "openChat": "Άνοιγμα chat",
+    "compatibility": "Συμβατότητα",
+    "refreshSuggestions": "Ανανέωση προτάσεων"
+  }
+}

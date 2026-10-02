@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MostyAPI — Commerce Dashboard</title>
+<link rel="stylesheet" href="/static/css/mosty-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+:root{ --radius:10px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;min-height:100vh}
+a{color:var(--tx);text-decoration:underline;text-decoration-color:rgba(0,0,0,.22)}
+a:hover{text-decoration-color:rgba(0,0,0,.45)}
+button{cursor:pointer;font-family:inherit;border:none;outline:none;transition:all .2s ease}
+input,textarea,select{font-family:inherit;background:var(--bg2);color:var(--tx);border:1px solid var(--border);border-radius:6px;padding:8px 12px;outline:none;transition:border .2s ease,box-shadow .2s ease}
+input:focus,textarea:focus,select:focus{border-color:rgba(0,0,0,.35);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+textarea{resize:vertical}
+
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.header h1{font-size:1.3rem;font-weight:700;color:var(--tx);flex-shrink:0}
+.header h1 span{color:var(--tx2);font-weight:400;font-size:.85rem;margin-left:8px}
+.session-bar{display:flex;align-items:center;gap:10px;margin-left:auto}
+.session-bar input{width:260px;font-size:.85rem}
+.session-bar button{background:var(--accent);color:#fff;padding:8px 16px;border-radius:6px;font-size:.82rem;font-weight:600}
+.session-bar button:hover{background:var(--accent2)}
+.session-id-display{font-size:.78rem;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.tabs{display:flex;gap:2px;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;overflow-x:auto;flex-wrap:nowrap}
+.tabs button{background:transparent;color:var(--tx2);padding:12px 18px;font-size:.82rem;font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button:hover{color:var(--tx)}
+.tabs button.active{color:var(--tx);border-bottom-color:var(--accent);font-weight:600}
+
+.panel{display:none;padding:24px;max-width:1400px;margin:0 auto}
+.panel.active{display:block}
+
+.grid{display:grid;gap:16px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.grid-4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.card h3{font-size:.9rem;font-weight:600;margin-bottom:12px;color:var(--tx2)}
+.card h2{font-size:1.8rem;font-weight:700}
+.card-accent{border-left:3px solid var(--accent)}
+
+.kpi{text-align:center}
+.kpi .value{font-size:2rem;font-weight:800;margin:4px 0}
+.kpi .label{font-size:.78rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px}
+.kpi.green .value{color:var(--accent-g)}
+.kpi.red .value{color:var(--accent-r)}
+.kpi.yellow .value{color:var(--accent-y)}
+.kpi.cyan .value{color:var(--accent-cyan)}
+.kpi.pink .value{color:var(--accent-pink)}
+
+.btn{padding:8px 18px;border-radius:6px;font-size:.82rem;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-danger{background:var(--accent-r);color:#fff}
+.btn-danger:hover{background:#dc2626}
+.btn-success{background:var(--accent-g);color:#fff}
+.btn-success:hover{background:#16a34a}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--tx2)}
+.btn-outline:hover{border-color:rgba(0,0,0,.25);color:var(--tx)}
+.btn-sm{padding:5px 12px;font-size:.75rem}
+
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+th{text-align:left;padding:10px 12px;color:var(--tx2);font-weight:600;border-bottom:1px solid var(--border);font-size:.78rem;text-transform:uppercase;letter-spacing:.3px}
+td{padding:10px 12px;border-bottom:1px solid var(--border)}
+tr:hover td{background:var(--bg3)}
+
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+.badge-green{background:rgba(34,197,94,.15);color:var(--accent-g)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--accent-r)}
+.badge-yellow{background:rgba(234,179,8,.15);color:var(--accent-y)}
+.badge-blue{background:rgba(0,0,0,.08);color:var(--tx)}
+.badge-cyan{background:rgba(0,0,0,.06);color:var(--tx2)}
+
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.8rem;color:var(--tx2);margin-bottom:4px;font-weight:500}
+.form-group input,.form-group textarea,.form-group select{width:100%}
+.form-row{display:flex;gap:12px;flex-wrap:wrap}
+.form-row .form-group{flex:1;min-width:180px}
+
+.empty{text-align:center;padding:40px 20px;color:var(--tx3);font-size:.9rem}
+.empty .icon{font-size:2.5rem;margin-bottom:10px;opacity:.5}
+
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:8px;font-size:.84rem;font-weight:500;box-shadow:var(--shadow);animation:slideIn .3s;max-width:400px}
+.toast-success{background:#166534;color:#bbf7d0}
+.toast-error{background:#991b1b;color:#fecaca}
+.toast-info{background:var(--bg3);color:var(--tx);border:1px solid var(--border)}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+.loading{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.chip{display:inline-block;background:var(--bg4);border:1px solid var(--border);border-radius:20px;padding:3px 12px;font-size:.75rem;margin:2px}
+
+.result-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
+.result-card h4{font-size:.88rem;margin-bottom:6px}
+.result-card .meta{font-size:.78rem;color:var(--tx2)}
+
+.section-title{font-size:1.1rem;font-weight:700;margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.section-title:first-child{margin-top:0}
+
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.chart-box canvas{max-height:300px}
+
+.flex-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+
+@media(max-width:768px){
+  .header{flex-direction:column;align-items:stretch}
+  .session-bar{margin-left:0;flex-wrap:wrap}
+  .session-bar input{width:100%}
+  .tabs{padding:0 12px}
+  .tabs button{padding:10px 12px;font-size:.78rem}
+  .panel{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Commerce Dashboard <span>MostyAPI</span></h1>
+  <div class="session-bar">
+    <input id="sid-input" placeholder="Session ID (π.χ. abc123)">
+    <button onclick="createSession()">+ Νέο Session</button>
+    <button class="btn-outline btn-sm" onclick="loadSession()">Φόρτωση</button>
+    <span class="session-id-display" id="sid-display"></span>
+  </div>
+</div>
+
+<div class="tabs" id="tab-bar">
+  <button class="active" data-tab="analytics">📊 Analytics</button>
+  <button data-tab="profile">👤 Profile</button>
+  <button data-tab="wishlist">❤️ Wishlist</button>
+  <button data-tab="looks">👗 Looks</button>
+  <button data-tab="feedback">📝 Feedback</button>
+  <button data-tab="ai-tools">🔍 AI Tools</button>
+  <button data-tab="alerts">🔔 Alerts</button>
+  <button data-tab="merchandising">🏷️ Merchandising</button>
+</div>
+
+<!-- ═══ ANALYTICS ═══ -->
+<div class="panel active" id="panel-analytics">
+  <div class="grid grid-4" id="kpi-cards">
+    <div class="card kpi"><div class="label">Events</div><div class="value" id="kpi-events">—</div></div>
+    <div class="card kpi cyan"><div class="label">Sessions</div><div class="value" id="kpi-sessions">—</div></div>
+    <div class="card kpi green"><div class="label">Liked SKUs</div><div class="value" id="kpi-liked">—</div></div>
+    <div class="card kpi red"><div class="label">Rejected SKUs</div><div class="value" id="kpi-rejected">—</div></div>
+    <div class="card kpi yellow"><div class="label">Wishlisted</div><div class="value" id="kpi-wishlisted">—</div></div>
+    <div class="card kpi pink"><div class="label">No Results</div><div class="value" id="kpi-noresult">—</div></div>
+  </div>
+  <div class="grid grid-2" style="margin-top:20px">
+    <div class="chart-box"><h3 style="margin-bottom:10px;font-size:.85rem;color:var(--tx2)">Top Events</h3><canvas id="chart-events"></canvas></div>
+    <div class="chart-box"><h3 style="margin-bottom:10px;font-size:.85rem;color:var(--tx2)">Feedback Actions</h3><canvas id="chart-feedback"></canvas></div>
+  </div>
+  <div class="grid grid-2" style="margin-top:16px">
+    <div class="card"><h3>Top Wishlisted SKUs</h3><div id="list-wishlist-top"></div></div>
+    <div class="card"><h3>Top Saved Look Occasions</h3><div id="list-occasions"></div></div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE ═══ -->
+<div class="panel" id="panel-profile">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Επεξεργασία Profile</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Budget Min (€)</label><input id="pf-budget-min" type="number" step="0.01"></div>
+        <div class="form-group"><label>Budget Max (€)</label><input id="pf-budget-max" type="number" step="0.01"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Occasion</label><input id="pf-occasion" placeholder="π.χ. casual, office, party"></div>
+        <div class="form-group"><label>Fit Preference</label><input id="pf-fit" placeholder="π.χ. slim, regular, loose"></div>
+      </div>
+      <div class="form-group"><label>Preferred Colors (κόμμα)</label><input id="pf-colors" placeholder="π.χ. μαύρο, λευκό, μπλε"></div>
+      <div class="form-group"><label>Preferred Categories (κόμμα)</label><input id="pf-categories" placeholder="π.χ. φορέματα, παπούτσια"></div>
+      <div class="form-group"><label>Preferred Styles (κόμμα)</label><input id="pf-styles" placeholder="π.χ. minimal, elegant, boho"></div>
+      <div class="form-group"><label>Preferred Sizes (κόμμα)</label><input id="pf-sizes" placeholder="π.χ. S, M, L"></div>
+      <div class="form-group"><label>Preferred Brands (κόμμα)</label><input id="pf-brands" placeholder="π.χ. Zara, Mango"></div>
+      <div class="form-group"><label>Language</label><select id="pf-lang"><option value="auto">Auto</option><option value="el">Ελληνικά</option><option value="en">English</option></select></div>
+      <button class="btn btn-primary" onclick="saveProfile()" style="margin-top:8px">Αποθήκευση Profile</button>
+    </div>
+    <div class="card">
+      <h3>Τρέχον Profile</h3>
+      <pre id="profile-display" style="font-size:.8rem;white-space:pre-wrap;color:var(--tx2);max-height:500px;overflow:auto"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ WISHLIST ═══ -->
+<div class="panel" id="panel-wishlist">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Προσθήκη στο Wishlist</h3>
+      <div class="form-group"><label>SKU</label><input id="wl-sku" placeholder="π.χ. DRESS-001"></div>
+      <div class="form-group"><label>Note (προαιρετικό)</label><input id="wl-note" placeholder="Σημείωση..."></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="addWishlist()">Προσθήκη</button>
+        <button class="btn btn-outline" onclick="loadWishlist()">Ανανέωση</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Αφαίρεση από Wishlist</h3>
+      <div class="form-group"><label>SKU</label><input id="wl-rm-sku" placeholder="π.χ. DRESS-001"></div>
+      <button class="btn btn-danger" onclick="removeWishlist()">Αφαίρεση</button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="flex-between"><h3>Wishlist Items</h3><span class="badge badge-blue" id="wl-count">0</span></div>
+    <table id="wl-table"><thead><tr><th>SKU</th><th>Note</th><th>Ημερομηνία</th></tr></thead><tbody></tbody></table>
+    <div class="empty" id="wl-empty" style="display:none"><div class="icon">❤️</div>Δεν υπάρχουν items στο wishlist.</div>
+  </div>
+</div>
+
+<!-- ═══ LOOKS ═══ -->
+<div class="panel" id="panel-looks">
+  <div class="card">
+    <h3>Δημιουργία Saved Look</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Τίτλος</label><input id="lk-title" placeholder="π.χ. Office Outfit"></div>
+      <div class="form-group"><label>Occasion</label><input id="lk-occasion" placeholder="π.χ. office, party"></div>
+    </div>
+    <div class="form-group"><label>SKUs (κόμμα)</label><input id="lk-skus" placeholder="π.χ. SKU1, SKU2, SKU3"></div>
+    <div class="form-group"><label>Note (προαιρετικό)</label><input id="lk-note" placeholder="Σημείωση..."></div>
+    <button class="btn btn-primary" onclick="saveLook()">Αποθήκευση Look</button>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="flex-between"><h3>Saved Looks</h3><button class="btn btn-outline btn-sm" onclick="loadLooks()">Ανανέωση</button></div>
+    <div id="looks-list"></div>
+    <div class="empty" id="looks-empty" style="display:none"><div class="icon">👗</div>Δεν υπάρχουν saved looks.</div>
+  </div>
+</div>
+
+<!-- ═══ FEEDBACK ═══ -->
+<div class="panel" id="panel-feedback">
+  <div class="card" style="max-width:600px">
+    <h3>Product Feedback</h3>
+    <div class="form-group"><label>SKU</label><input id="fb-sku" placeholder="π.χ. DRESS-001"></div>
+    <div class="form-group"><label>Action</label>
+      <select id="fb-action">
+        <option value="like">👍 Like</option>
+        <option value="dislike">👎 Dislike</option>
+        <option value="reject">❌ Reject</option>
+        <option value="too_expensive">💰 Too Expensive</option>
+        <option value="wrong_style">🎨 Wrong Style</option>
+        <option value="wrong_size">📏 Wrong Size</option>
+        <option value="not_for_occasion">🎭 Not for Occasion</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Reason (προαιρετικό)</label><textarea id="fb-reason" rows="2" placeholder="Γιατί;"></textarea></div>
+    <button class="btn btn-primary" onclick="sendFeedback()">Αποστολή Feedback</button>
+  </div>
+</div>
+
+<!-- ═══ AI TOOLS ═══ -->
+<div class="panel" id="panel-ai-tools">
+  <div class="grid grid-2">
+    <!-- Contradiction Checker -->
+    <div class="card">
+      <h3>🔍 Contradiction Checker</h3>
+      <div class="form-group"><label>Query</label><input id="ct-query" placeholder="π.χ. θέλω παπούτσια χωρίς παπούτσια"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Category</label><input id="ct-cat" placeholder="π.χ. φορέματα"></div>
+        <div class="form-group"><label>Min Price</label><input id="ct-min" type="number"></div>
+        <div class="form-group"><label>Max Price</label><input id="ct-max" type="number"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Color</label><input id="ct-color" placeholder="π.χ. μαύρο"></div>
+        <div class="form-group"><label>Size</label><input id="ct-size" placeholder="π.χ. M"></div>
+      </div>
+      <button class="btn btn-primary" onclick="checkContradictions()">Έλεγχος</button>
+      <div id="ct-result" style="margin-top:14px"></div>
+    </div>
+
+    <!-- Complete the Look -->
+    <div class="card">
+      <h3>👗 Complete the Look</h3>
+      <div class="form-group"><label>Anchor SKU</label><input id="cl-sku" placeholder="π.χ. DRESS-001"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Budget Max (€)</label><input id="cl-budget" type="number"></div>
+        <div class="form-group"><label>Occasion</label><input id="cl-occasion" placeholder="π.χ. party"></div>
+      </div>
+      <div class="form-group"><label>Style</label><input id="cl-style" placeholder="π.χ. elegant"></div>
+      <button class="btn btn-primary" onclick="completeLook()">Complete the Look</button>
+      <div id="cl-result" style="margin-top:14px"></div>
+    </div>
+
+    <!-- Structured Compare -->
+    <div class="card">
+      <h3>⚖️ Structured Compare</h3>
+      <div class="form-group"><label>SKUs (κόμμα, τουλάχιστον 2)</label><input id="sc-skus" placeholder="π.χ. SKU1, SKU2, SKU3"></div>
+      <button class="btn btn-primary" onclick="structuredCompare()">Σύγκριση</button>
+      <div id="sc-result" style="margin-top:14px"></div>
+    </div>
+
+    <!-- Alternatives -->
+    <div class="card">
+      <h3>🔄 Alternatives</h3>
+      <div class="form-group"><label>SKU</label><input id="alt-sku" placeholder="π.χ. DRESS-001"></div>
+      <div class="form-group"><label>Types</label>
+        <div style="display:flex;gap:12px;margin-top:4px">
+          <label style="font-size:.8rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="alt-similar" checked> Similar</label>
+          <label style="font-size:.8rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="alt-cheaper" checked> Cheaper</label>
+          <label style="font-size:.8rem;display:flex;align-items:center;gap:4px"><input type="checkbox" id="alt-premium" checked> Premium</label>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="findAlternatives()">Εύρεση</button>
+      <div id="alt-result" style="margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ALERTS ═══ -->
+<div class="panel" id="panel-alerts">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Δημιουργία Alert</h3>
+      <div class="form-group"><label>Τύπος</label>
+        <select id="al-type" onchange="updateAlertConfig()">
+          <option value="restock">📦 Restock</option>
+          <option value="price_drop">💰 Price Drop</option>
+          <option value="new_in_category">🆕 New in Category</option>
+        </select>
+      </div>
+      <div class="form-group" id="al-sku-group"><label>SKU</label><input id="al-sku" placeholder="π.χ. DRESS-001"></div>
+      <div class="form-group" id="al-price-group" style="display:none"><label>Target Price (€)</label><input id="al-price" type="number" step="0.01"></div>
+      <div class="form-group" id="al-cat-group" style="display:none"><label>Category</label><input id="al-cat" placeholder="π.χ. φορέματα"></div>
+      <button class="btn btn-primary" onclick="createAlert()">Δημιουργία Alert</button>
+    </div>
+    <div class="card">
+      <h3>Τα Alerts μου</h3>
+      <button class="btn btn-outline btn-sm" onclick="loadAlerts()" style="margin-bottom:12px">Ανανέωση</button>
+      <div id="alerts-list"></div>
+      <div class="empty" id="alerts-empty" style="display:none"><div class="icon">🔔</div>Δεν υπάρχουν alerts.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MERCHANDISING ═══ -->
+<div class="panel" id="panel-merchandising">
+  <div class="card">
+    <h3>Δημιουργία Merchandising Rule</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Rule Type</label>
+        <select id="mr-type">
+          <option value="featured_sku">⭐ Featured SKU</option>
+          <option value="boost_brand">🏪 Boost Brand</option>
+          <option value="boost_category">📁 Boost Category</option>
+          <option value="exclude_sku">🚫 Exclude SKU</option>
+          <option value="campaign">🎯 Campaign</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Value</label><input id="mr-value" placeholder="SKU, brand name, category..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Boost Weight</label><input id="mr-weight" type="number" step="0.01" value="0.1"></div>
+      <div class="form-group"><label>Label</label><input id="mr-label" placeholder="Campaign name..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Starts At</label><input id="mr-start" type="date"></div>
+      <div class="form-group"><label>Ends At</label><input id="mr-end" type="date"></div>
+    </div>
+    <button class="btn btn-primary" onclick="createRule()">Δημιουργία Rule</button>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="flex-between"><h3>Active Rules</h3><button class="btn btn-outline btn-sm" onclick="loadRules()">Ανανέωση</button></div>
+    <table id="rules-table"><thead><tr><th>ID</th><th>Type</th><th>Value</th><th>Boost</th><th>Label</th><th>Active</th><th>Dates</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="empty" id="rules-empty" style="display:none"><div class="icon">🏷️</div>Δεν υπάρχουν merchandising rules.</div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-box"></div>
+
+<script>
+const P = __API_PREFIX__;
+const K = __MOSTY_API_KEY__;
+const AK = __ADMIN_API_KEY__;
+
+const H = () => K ? {'x-mosty-api-key': K, 'Content-Type':'application/json'} : {'Content-Type':'application/json'};
+const AH = () => {
+  const h = {'Content-Type':'application/json'};
+  if(AK) h['x-mosty-api-key'] = AK;
+  return h;
+};
+
+let SID = localStorage.getItem('mosty_sid') || '';
+document.getElementById('sid-input').value = SID;
+if(SID) document.getElementById('sid-display').textContent = '✓ ' + SID;
+
+function setSid(id){
+  SID = id;
+  localStorage.setItem('mosty_sid', id);
+  document.getElementById('sid-input').value = id;
+  document.getElementById('sid-display').textContent = '✓ ' + id;
+}
+
+function requireSid(){
+  if(!SID){toast('Εισάγετε ή δημιουργήστε ένα Session ID πρώτα.','error');return false;}
+  return true;
+}
+
+async function api(url, opts={}){
+  try{
+    const r = await fetch(url, opts);
+    if(!r.ok){
+      const e = await r.json().catch(()=>({}));
+      throw new Error(e.detail || `HTTP ${r.status}`);
+    }
+    return await r.json();
+  }catch(err){
+    toast(err.message,'error');
+    throw err;
+  }
+}
+
+function toast(msg, type='info'){
+  const d = document.createElement('div');
+  d.className = 'toast toast-' + type;
+  d.textContent = msg;
+  document.getElementById('toast-box').appendChild(d);
+  setTimeout(()=>d.remove(), 4000);
+}
+
+// ── Tabs ──
+document.getElementById('tab-bar').addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('panel-'+e.target.dataset.tab).classList.add('active');
+  const tab = e.target.dataset.tab;
+  if(tab==='analytics') loadAnalytics();
+  if(tab==='profile' && SID) loadProfile();
+  if(tab==='wishlist' && SID) loadWishlist();
+  if(tab==='looks' && SID) loadLooks();
+  if(tab==='alerts' && SID) loadAlerts();
+  if(tab==='merchandising') loadRules();
+});
+
+// ── Session ──
+async function createSession(){
+  try{
+    const d = await api(P+'/chat/session', {method:'POST', headers:H()});
+    if(d.session?.session_id){
+      setSid(d.session.session_id);
+      toast('Session δημιουργήθηκε: '+d.session.session_id, 'success');
+    }
+  }catch(e){}
+}
+function loadSession(){
+  const v = document.getElementById('sid-input').value.trim();
+  if(!v){toast('Εισάγετε Session ID','error');return;}
+  setSid(v);
+  toast('Session loaded: '+v,'success');
+}
+
+// ── Analytics ──
+let evtChart, fbChart;
+async function loadAnalytics(){
+  try{
+    const d = await api(P+'/commerce/analytics/summary', {headers:H()});
+    const sumEvents = (d.top_events||[]).reduce((a,e)=>a+e.count,0);
+    document.getElementById('kpi-events').textContent = sumEvents;
+    document.getElementById('kpi-sessions').textContent = d.unique_sessions||0;
+    document.getElementById('kpi-liked').textContent = (d.most_liked_skus||[]).length;
+    document.getElementById('kpi-rejected').textContent = (d.most_rejected_skus||[]).length;
+    document.getElementById('kpi-wishlisted').textContent = (d.top_wishlist_skus||[]).length;
+    document.getElementById('kpi-noresult').textContent = d.no_result_count||0;
+
+    // Events chart
+    const evts = (d.top_events||[]).slice(0,8);
+    if(evtChart) evtChart.destroy();
+    evtChart = new Chart(document.getElementById('chart-events'),{
+      type:'bar',
+      data:{labels:evts.map(e=>e.event_type), datasets:[{label:'Count',data:evts.map(e=>e.count),backgroundColor:'rgba(0,0,0,.72)',borderRadius:4}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#6B7280'}},x:{ticks:{color:'#6B7280',maxRotation:45}}}}
+    });
+
+    // Feedback chart
+    const fbs = d.top_feedback_actions||[];
+    if(fbChart) fbChart.destroy();
+    const fbColors = ['#111111','#374151','#6b7280','#9ca3af','#d1d5db','#e5e7eb','#f3f4f6'];
+    fbChart = new Chart(document.getElementById('chart-feedback'),{
+      type:'doughnut',
+      data:{labels:fbs.map(f=>f.action), datasets:[{data:fbs.map(f=>f.count),backgroundColor:fbColors.slice(0,fbs.length)}]},
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#555555',boxWidth:12}}}}
+    });
+
+    // Wishlist top
+    const wlDiv = document.getElementById('list-wishlist-top');
+    const wls = (d.top_wishlist_skus||[]).slice(0,8);
+    wlDiv.innerHTML = wls.length ? wls.map(w=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.84rem"><span>${w.sku}</span><span class="badge badge-blue">${w.count}</span></div>`).join('') : '<div class="empty">Κανένα item</div>';
+
+    // Occasions
+    const ocDiv = document.getElementById('list-occasions');
+    const ocs = (d.top_saved_look_occasions||[]).slice(0,8);
+    ocDiv.innerHTML = ocs.length ? ocs.map(o=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.84rem"><span>${o.occasion}</span><span class="badge badge-cyan">${o.count}</span></div>`).join('') : '<div class="empty">Κανένα occasion</div>';
+  }catch(e){}
+}
+
+// ── Profile ──
+async function loadProfile(){
+  if(!requireSid()) return;
+  try{
+    const d = await api(P+'/commerce/profile/'+SID, {headers:H()});
+    document.getElementById('profile-display').textContent = JSON.stringify(d.profile||{}, null, 2);
+    const p = d.profile||{};
+    document.getElementById('pf-budget-min').value = p.budget_min||'';
+    document.getElementById('pf-budget-max').value = p.budget_max||'';
+    document.getElementById('pf-occasion').value = p.occasion||'';
+    document.getElementById('pf-fit').value = p.fit_preference||'';
+    document.getElementById('pf-colors').value = (p.preferred_colors||[]).join(', ');
+    document.getElementById('pf-categories').value = (p.preferred_categories||[]).join(', ');
+    document.getElementById('pf-styles').value = (p.preferred_styles||[]).join(', ');
+    document.getElementById('pf-sizes').value = (p.preferred_sizes||[]).join(', ');
+    document.getElementById('pf-brands').value = (p.preferred_brands||[]).join(', ');
+    document.getElementById('pf-lang').value = p.language||'auto';
+  }catch(e){}
+}
+
+async function saveProfile(){
+  if(!requireSid()) return;
+  const csvToArr = v => v ? v.split(',').map(s=>s.trim()).filter(Boolean) : undefined;
+  const numOrNull = v => v!=='' ? parseFloat(v) : undefined;
+  const body = {};
+  const bmin = numOrNull(document.getElementById('pf-budget-min').value);
+  const bmax = numOrNull(document.getElementById('pf-budget-max').value);
+  if(bmin!==undefined) body.budget_min = bmin;
+  if(bmax!==undefined) body.budget_max = bmax;
+  const occ = document.getElementById('pf-occasion').value.trim();
+  if(occ) body.occasion = occ;
+  const fit = document.getElementById('pf-fit').value.trim();
+  if(fit) body.fit_preference = fit;
+  const cols = csvToArr(document.getElementById('pf-colors').value);
+  if(cols) body.preferred_colors = cols;
+  const cats = csvToArr(document.getElementById('pf-categories').value);
+  if(cats) body.preferred_categories = cats;
+  const stys = csvToArr(document.getElementById('pf-styles').value);
+  if(stys) body.preferred_styles = stys;
+  const szs = csvToArr(document.getElementById('pf-sizes').value);
+  if(szs) body.preferred_sizes = szs;
+  const brs = csvToArr(document.getElementById('pf-brands').value);
+  if(brs) body.preferred_brands = brs;
+  const lang = document.getElementById('pf-lang').value;
+  if(lang && lang!=='auto') body.language = lang;
+  try{
+    await api(P+'/commerce/profile/'+SID, {method:'PATCH', headers:H(), body:JSON.stringify(body)});
+    toast('Profile αποθηκεύτηκε!','success');
+    loadProfile();
+  }catch(e){}
+}
+
+// ── Wishlist ──
+async function loadWishlist(){
+  if(!requireSid()) return;
+  try{
+    const d = await api(P+'/commerce/wishlist/'+SID, {headers:H()});
+    const items = d.items||[];
+    const tbody = document.querySelector('#wl-table tbody');
+    const empty = document.getElementById('wl-empty');
+    if(!items.length){tbody.innerHTML='';empty.style.display='block';document.getElementById('wl-count').textContent='0';return;}
+    empty.style.display='none';
+    document.getElementById('wl-count').textContent = items.length;
+    tbody.innerHTML = items.map(i=>`<tr><td><code>${i.sku}</code></td><td>${i.note||'—'}</td><td style="font-size:.78rem;color:var(--tx2)">${i.created_at||''}</td></tr>`).join('');
+  }catch(e){}
+}
+
+async function addWishlist(){
+  if(!requireSid()) return;
+  const sku = document.getElementById('wl-sku').value.trim();
+  if(!sku){toast('Εισάγετε SKU','error');return;}
+  try{
+    await api(P+'/commerce/wishlist/add', {method:'POST', headers:H(), body:JSON.stringify({session_id:SID, sku, note:document.getElementById('wl-note').value.trim()||null})});
+    toast('Προστέθηκε στο wishlist!','success');
+    document.getElementById('wl-sku').value='';
+    document.getElementById('wl-note').value='';
+    loadWishlist();
+  }catch(e){}
+}
+
+async function removeWishlist(){
+  if(!requireSid()) return;
+  const sku = document.getElementById('wl-rm-sku').value.trim();
+  if(!sku){toast('Εισάγετε SKU','error');return;}
+  try{
+    await api(P+'/commerce/wishlist/remove', {method:'POST', headers:H(), body:JSON.stringify({session_id:SID, sku})});
+    toast('Αφαιρέθηκε από το wishlist','success');
+    document.getElementById('wl-rm-sku').value='';
+    loadWishlist();
+  }catch(e){}
+}
+
+// ── Looks ──
+async function loadLooks(){
+  if(!requireSid()) return;
+  try{
+    const d = await api(P+'/commerce/looks/'+SID, {headers:H()});
+    const looks = d.looks||[];
+    const cont = document.getElementById('looks-list');
+    const empty = document.getElementById('looks-empty');
+    if(!looks.length){cont.innerHTML='';empty.style.display='block';return;}
+    empty.style.display='none';
+    cont.innerHTML = looks.map(l=>`
+      <div class="result-card">
+        <div class="flex-between">
+          <h4>${l.title}</h4>
+          <div>
+            ${l.occasion?'<span class="badge badge-cyan">'+l.occasion+'</span>':''}
+            <button class="btn btn-danger btn-sm" onclick="deleteLook(${l.id})" style="margin-left:6px">🗑️</button>
+          </div>
+        </div>
+        <div style="margin-top:6px">${(l.skus||[]).map(s=>'<span class="chip">'+s+'</span>').join(' ')}</div>
+        ${l.note?'<div class="meta" style="margin-top:6px">'+l.note+'</div>':''}
+        <div class="meta" style="margin-top:4px">${l.created_at||''}</div>
+      </div>
+    `).join('');
+  }catch(e){}
+}
+
+async function saveLook(){
+  if(!requireSid()) return;
+  const title = document.getElementById('lk-title').value.trim();
+  const skus = document.getElementById('lk-skus').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!title||!skus.length){toast('Εισάγετε τίτλο και τουλάχιστον ένα SKU','error');return;}
+  try{
+    await api(P+'/commerce/looks/save', {method:'POST', headers:H(), body:JSON.stringify({
+      session_id:SID, title, skus,
+      occasion:document.getElementById('lk-occasion').value.trim()||null,
+      note:document.getElementById('lk-note').value.trim()||null
+    })});
+    toast('Look αποθηκεύτηκε!','success');
+    document.getElementById('lk-title').value='';
+    document.getElementById('lk-skus').value='';
+    document.getElementById('lk-occasion').value='';
+    document.getElementById('lk-note').value='';
+    loadLooks();
+  }catch(e){}
+}
+
+async function deleteLook(id){
+  if(!requireSid()) return;
+  try{
+    await api(P+'/commerce/looks/'+SID+'/'+id, {method:'DELETE', headers:H()});
+    toast('Look διαγράφηκε','success');
+    loadLooks();
+  }catch(e){}
+}
+
+// ── Feedback ──
+async function sendFeedback(){
+  if(!requireSid()) return;
+  const sku = document.getElementById('fb-sku').value.trim();
+  if(!sku){toast('Εισάγετε SKU','error');return;}
+  try{
+    await api(P+'/commerce/feedback', {method:'POST', headers:H(), body:JSON.stringify({
+      session_id:SID, sku,
+      action:document.getElementById('fb-action').value,
+      reason:document.getElementById('fb-reason').value.trim()||null
+    })});
+    toast('Feedback καταχωρήθηκε!','success');
+    document.getElementById('fb-sku').value='';
+    document.getElementById('fb-reason').value='';
+  }catch(e){}
+}
+
+// ── Contradiction Checker ──
+async function checkContradictions(){
+  const query = document.getElementById('ct-query').value.trim()||null;
+  const filters = {};
+  const cat = document.getElementById('ct-cat').value.trim();
+  if(cat) filters.category = cat;
+  const mn = document.getElementById('ct-min').value;
+  if(mn) filters.min_price = parseFloat(mn);
+  const mx = document.getElementById('ct-max').value;
+  if(mx) filters.max_price = parseFloat(mx);
+  const col = document.getElementById('ct-color').value.trim();
+  if(col) filters.color = col;
+  const sz = document.getElementById('ct-size').value.trim();
+  if(sz) filters.size = sz;
+  try{
+    const d = await api(P+'/commerce/filters/check-contradictions', {method:'POST', headers:H(), body:JSON.stringify({query, filters:Object.keys(filters).length?filters:null})});
+    let html = '';
+    if(d.has_contradictions){
+      html += '<div style="margin-bottom:8px"><span class="badge badge-red">ΑΝΤΙΦΑΣΕΙΣ</span></div>';
+      d.contradictions.forEach(c=>html+=`<div style="color:var(--accent-r);font-size:.84rem;margin:4px 0">⚠️ ${c}</div>`);
+    }else{
+      html += '<div><span class="badge badge-green">OK — Κανένα πρόβλημα</span></div>';
+    }
+    if(d.warnings?.length){
+      d.warnings.forEach(w=>html+=`<div style="color:var(--accent-y);font-size:.84rem;margin:4px 0">⚡ ${w}</div>`);
+    }
+    if(d.suggestions?.length){
+      html += '<div style="margin-top:8px;font-size:.82rem;color:var(--tx2)">';
+      d.suggestions.forEach(s=>html+=`<div>💡 ${s}</div>`);
+      html += '</div>';
+    }
+    document.getElementById('ct-result').innerHTML = html;
+  }catch(e){}
+}
+
+// ── Complete the Look ──
+async function completeLook(){
+  const sku = document.getElementById('cl-sku').value.trim();
+  if(!sku){toast('Εισάγετε SKU','error');return;}
+  const body = {sku};
+  const bud = document.getElementById('cl-budget').value;
+  if(bud) body.budget_max = parseFloat(bud);
+  const occ = document.getElementById('cl-occasion').value.trim();
+  if(occ) body.occasion = occ;
+  const sty = document.getElementById('cl-style').value.trim();
+  if(sty) body.style = sty;
+  document.getElementById('cl-result').innerHTML = '<div class="loading"></div>';
+  try{
+    const d = await api(P+'/commerce/complete-the-look', {method:'POST', headers:H(), body:JSON.stringify(body)});
+    let html = '';
+    if(d.message){html+=`<div class="empty">${d.message}</div>`;}
+    else{
+      html += `<div style="font-size:.85rem;margin-bottom:10px">Anchor: <strong>${d.anchor_name}</strong> (${d.anchor_sku})</div>`;
+      (d.groups||[]).forEach(g=>{
+        html += `<div style="margin-bottom:12px"><div class="badge badge-blue" style="margin-bottom:6px">${g.target_category}</div>`;
+        (g.items||[]).forEach(i=>{
+          html += `<div class="result-card"><h4>${i.name}</h4><div class="meta">${i.sku} · Score: ${(i.score||0).toFixed(3)} · ${i.metadata?.price?i.metadata.price+'€':''}</div></div>`;
+        });
+        html += '</div>';
+      });
+      if(!(d.groups||[]).length) html += '<div class="empty">Δεν βρέθηκαν complementary items.</div>';
+    }
+    document.getElementById('cl-result').innerHTML = html;
+  }catch(e){document.getElementById('cl-result').innerHTML='';}
+}
+
+// ── Structured Compare ──
+async function structuredCompare(){
+  const skus = document.getElementById('sc-skus').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(skus.length<2){toast('Εισάγετε τουλάχιστον 2 SKUs','error');return;}
+  document.getElementById('sc-result').innerHTML = '<div class="loading"></div>';
+  try{
+    const d = await api(P+'/commerce/compare/structured', {method:'POST', headers:H(), body:JSON.stringify({skus})});
+    let html = '';
+    (d.products||[]).forEach(p=>{
+      html += `<div class="result-card">
+        <h4>${p.name} <span style="color:var(--tx2);font-weight:400">(${p.sku})</span></h4>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:.82rem;margin:6px 0">
+          ${p.price!=null?'<span>💰 '+p.price+'€</span>':''}
+          ${p.brand?'<span>🏪 '+p.brand+'</span>':''}
+        </div>
+        <div style="font-size:.8rem;color:var(--tx2);margin:4px 0">
+          ${p.style_notes?'🎨 '+p.style_notes:''}
+          ${p.occasion_fit?' · 🎭 '+p.occasion_fit:''}
+          ${p.material_hints!=='Δεν αναφέρεται'?' · 🧵 '+p.material_hints:''}
+          ${p.color_hints!=='Δεν αναφέρεται'?' · 🎨 '+p.color_hints:''}
+        </div>
+        <div style="margin:6px 0">
+          ${(p.pros||[]).map(x=>'<span class="badge badge-green" style="margin:2px">✓ '+x+'</span>').join(' ')}
+          ${(p.cons||[]).map(x=>'<span class="badge badge-red" style="margin:2px">✗ '+x+'</span>').join(' ')}
+        </div>
+        <div style="font-size:.8rem;color:var(--tx2)">Best for: ${p.best_for||'—'} · ${p.value_for_money_note||''}</div>
+      </div>`;
+    });
+    if(d.verdict) html += `<div style="background:var(--bg3);border-radius:8px;padding:12px;font-size:.85rem;margin-top:8px">📊 <strong>Verdict:</strong> ${d.verdict}</div>`;
+    document.getElementById('sc-result').innerHTML = html;
+  }catch(e){document.getElementById('sc-result').innerHTML='';}
+}
+
+// ── Alternatives ──
+async function findAlternatives(){
+  const sku = document.getElementById('alt-sku').value.trim();
+  if(!sku){toast('Εισάγετε SKU','error');return;}
+  const types = [];
+  if(document.getElementById('alt-similar').checked) types.push('similar');
+  if(document.getElementById('alt-cheaper').checked) types.push('cheaper');
+  if(document.getElementById('alt-premium').checked) types.push('premium');
+  document.getElementById('alt-result').innerHTML = '<div class="loading"></div>';
+  try{
+    const d = await api(P+'/commerce/alternatives', {method:'POST', headers:H(), body:JSON.stringify({sku, types, top_k:4})});
+    let html = `<div style="font-size:.85rem;margin-bottom:10px">Anchor: <strong>${d.anchor_name||sku}</strong></div>`;
+    (d.groups||[]).forEach(g=>{
+      const typeLabel = {similar:'Παρόμοια',cheaper:'Φθηνότερα',premium:'Premium'}[g.alt_type]||g.alt_type;
+      html += `<div style="margin-bottom:12px"><div class="badge badge-cyan" style="margin-bottom:6px">${typeLabel}</div><div class="meta" style="margin-bottom:6px">${g.reason}</div>`;
+      if(!(g.items||[]).length) html += '<div style="font-size:.82rem;color:var(--tx3)">Δεν βρέθηκαν εναλλακτικές.</div>';
+      (g.items||[]).forEach(i=>{
+        html += `<div class="result-card"><h4>${i.name}</h4><div class="meta">${i.sku} · Score: ${(i.score||0).toFixed(3)} · ${i.metadata?.price?i.metadata.price+'€':''}</div></div>`;
+      });
+      html += '</div>';
+    });
+    document.getElementById('alt-result').innerHTML = html;
+  }catch(e){document.getElementById('alt-result').innerHTML='';}
+}
+
+// ── Alerts ──
+function updateAlertConfig(){
+  const t = document.getElementById('al-type').value;
+  document.getElementById('al-sku-group').style.display = t==='new_in_category'?'none':'block';
+  document.getElementById('al-price-group').style.display = t==='price_drop'?'block':'none';
+  document.getElementById('al-cat-group').style.display = t==='new_in_category'?'block':'none';
+}
+
+async function createAlert(){
+  if(!requireSid()) return;
+  const alert_type = document.getElementById('al-type').value;
+  const config = {};
+  if(alert_type==='restock'||alert_type==='price_drop'){
+    const sku = document.getElementById('al-sku').value.trim();
+    if(!sku){toast('Εισάγετε SKU','error');return;}
+    config.sku = sku;
+  }
+  if(alert_type==='price_drop'){
+    const p = document.getElementById('al-price').value;
+    if(!p){toast('Εισάγετε target price','error');return;}
+    config.target_price = parseFloat(p);
+  }
+  if(alert_type==='new_in_category'){
+    const c = document.getElementById('al-cat').value.trim();
+    if(!c){toast('Εισάγετε category','error');return;}
+    config.category = c;
+  }
+  try{
+    await api(P+'/commerce/alerts', {method:'POST', headers:H(), body:JSON.stringify({session_id:SID, alert_type, config})});
+    toast('Alert δημιουργήθηκε!','success');
+    loadAlerts();
+  }catch(e){}
+}
+
+async function loadAlerts(){
+  if(!requireSid()) return;
+  try{
+    const d = await api(P+'/commerce/alerts/'+SID, {headers:H()});
+    const alerts = d.alerts||[];
+    const cont = document.getElementById('alerts-list');
+    const empty = document.getElementById('alerts-empty');
+    if(!alerts.length){cont.innerHTML='';empty.style.display='block';return;}
+    empty.style.display='none';
+    cont.innerHTML = alerts.map(a=>{
+      const statusBadge = {active:'badge-green',triggered:'badge-yellow',dismissed:'badge-blue'}[a.status]||'badge-blue';
+      return `<div class="result-card">
+        <div class="flex-between">
+          <div><span class="badge ${statusBadge}">${a.status}</span> <strong style="margin-left:6px">${a.alert_type}</strong></div>
+          <div>
+            ${a.status==='active'?`<button class="btn btn-outline btn-sm" onclick="dismissAlert(${a.id})">Dismiss</button>`:''}
+            <button class="btn btn-danger btn-sm" onclick="deleteAlert(${a.id})" style="margin-left:4px">🗑️</button>
+          </div>
+        </div>
+        <div class="meta" style="margin-top:6px">Config: ${JSON.stringify(a.config||{})}</div>
+        <div class="meta">${a.created_at||''}</div>
+      </div>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function deleteAlert(id){
+  if(!requireSid()) return;
+  try{
+    await api(P+'/commerce/alerts/'+SID+'/'+id, {method:'DELETE', headers:H()});
+    toast('Alert διαγράφηκε','success');
+    loadAlerts();
+  }catch(e){}
+}
+
+async function dismissAlert(id){
+  if(!requireSid()) return;
+  try{
+    await api(P+'/commerce/alerts/'+SID+'/'+id+'/dismiss', {method:'POST', headers:H()});
+    toast('Alert dismissed','success');
+    loadAlerts();
+  }catch(e){}
+}
+
+// ── Merchandising ──
+async function loadRules(){
+  try{
+    const d = await api(P+'/admin/merchandising/rules', {headers:AH()});
+    const rules = d.rules||[];
+    const tbody = document.querySelector('#rules-table tbody');
+    const empty = document.getElementById('rules-empty');
+    if(!rules.length){tbody.innerHTML='';empty.style.display='block';return;}
+    empty.style.display='none';
+    tbody.innerHTML = rules.map(r=>`<tr>
+      <td>${r.id}</td>
+      <td><span class="badge badge-blue">${r.rule_type}</span></td>
+      <td><code>${r.value}</code></td>
+      <td>${r.boost_weight}</td>
+      <td>${r.label||'—'}</td>
+      <td>${r.active?'<span class="badge badge-green">Active</span>':'<span class="badge badge-red">Inactive</span>'}</td>
+      <td style="font-size:.75rem;color:var(--tx3)">${r.starts_at||'—'} → ${r.ends_at||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteRule(${r.id})">🗑️</button></td>
+    </tr>`).join('');
+  }catch(e){}
+}
+
+async function createRule(){
+  const body = {
+    rule_type: document.getElementById('mr-type').value,
+    value: document.getElementById('mr-value').value.trim(),
+    boost_weight: parseFloat(document.getElementById('mr-weight').value)||0.1,
+    label: document.getElementById('mr-label').value.trim()||null,
+    active: true,
+  };
+  const start = document.getElementById('mr-start').value;
+  const end = document.getElementById('mr-end').value;
+  if(start) body.starts_at = start+'T00:00:00Z';
+  if(end) body.ends_at = end+'T23:59:59Z';
+  if(!body.value){toast('Εισάγετε value','error');return;}
+  try{
+    await api(P+'/admin/merchandising/rules', {method:'POST', headers:AH(), body:JSON.stringify(body)});
+    toast('Rule δημιουργήθηκε!','success');
+    document.getElementById('mr-value').value='';
+    document.getElementById('mr-label').value='';
+    loadRules();
+  }catch(e){}
+}
+
+async function deleteRule(id){
+  try{
+    await api(P+'/admin/merchandising/rules/'+id, {method:'DELETE', headers:AH()});
+    toast('Rule διαγράφηκε','success');
+    loadRules();
+  }catch(e){}
+}
+
+// ── Init ──
+loadAnalytics();
+</script>
+</body>
+</html>

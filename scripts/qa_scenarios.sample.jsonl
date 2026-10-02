@@ -1,0 +1,10 @@
+{"id": "discovery-1", "category": "product_discovery", "query": "ψαχνω κατι για δωρο γυρω στα 30€ τι μου προτεινεις", "expect_products": true, "expected_behavior": "Budget-aware product suggestions from catalog", "notes": "Greek natural phrasing"}
+{"id": "details-1", "category": "product_details", "query": "αυτο το προϊον τι υφασμα εχει; αξιζει τα λεφτα του;", "expect_products": false, "expected_behavior": "Ask for SKU or search context if vague"}
+{"id": "compare-1", "category": "comparison", "query": "ποια η διαφορα μεταξυ δυο φορεματων για γαμο", "expect_products": true, "notes": "Comparison intent"}
+{"id": "edge-1", "category": "edge", "query": "θελω κατι αλλα δεν ξερω τι δειξε μου κατι καλο", "expect_products": false, "expected_behavior": "Clarify or broad retrieval"}
+{"id": "price-1", "category": "price", "query": "εχεις κατι φθηνοτερο απο 25€ εκπτωσεις;", "expect_products": true, "filters": {"max_price": 25}}
+{"id": "policy-1", "category": "policy", "query": "σε ποσες μερες ερχεται στην αθηνα μπορω επιστροφη", "expect_no_products": true, "expected_intent": "support_shipping"}
+{"id": "oos-1", "category": "out_of_scope", "query": "που ειναι το καταστημα", "expect_no_products": true, "expected_intent": "support_stores"}
+{"id": "followup-1", "category": "follow_up", "query": "δειξε μου κατι πιο οικονομικο απο πριν", "expect_products": true, "notes": "Use session_mode single for context"}
+{"id": "rec-1", "category": "recommendation", "query": "τι να παρω για καλοκαιρινο γαμο; best seller τι εχετε", "expect_products": true}
+{"id": "stress-1", "category": "stress", "query": "δεν με βοηθας πες μου κατι συγκεκριμενο", "expect_products": false}

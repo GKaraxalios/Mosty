@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "1.0",
+  "variant": "production",
+  "page": {
+    "documentTitle": "ELIZA AI AGENT — Shopping Assistant",
+    "title": "ELIZA AI AGENT",
+    "brandName": "ELIZA AI AGENT",
+    "modelTag": "Gemini 2.5 Flash",
+    "version": "v2.0"
+  },
+  "theme": {
+    "cssVariables": {}
+  },
+  "dataSources": {
+    "endpoints": {
+      "sessionCreate": "/api/v1/chat/session",
+      "ask": "/api/v1/chat/ask",
+      "sessionDelete": "/api/v1/chat/session/{sessionId}",
+      "conversationsList": "/api/v1/chat/conversations",
+      "conversationMessages": "/api/v1/chat/conversations/{sessionId}/messages"
+    },
+    "defaults": {
+      "top_k": 10,
+      "temperature": 0.2
+    }
+  },
+  "welcome": {
+    "title": "ELIZA AI AGENT",
+    "subtitle": "Your personal shopping assistant",
+    "quickFilters": [
+      {
+        "label": "έως 100€",
+        "filters": { "max_price": 100 }
+      },
+      {
+        "label": "προσφορές",
+        "filters": { "sale_only": true }
+      },
+      {
+        "label": "νέες αφίξεις",
+        "filters": { "new_arrivals_only": true }
+      }
+    ],
+    "suggestions": [
+      {
+        "query": "Θέλω ένα φόρεμα για καλοκαιρινό γάμο ως καλεσμένη, κομψό και κατάλληλο για εκκλησία και δεξίωση, μεσαίο budget",
+        "title": "Φόρεμα για γάμο το καλοκαίρι",
+        "subtitle": "Θέλω κάτι κομψό αλλά όχι υπερβολικό για καλεσμένη"
+      },
+      {
+        "query": "Δείξε μου casual ρούχα και καθημερινά σύνολα μέχρι 100 ευρώ, για συχνή χρήση",
+        "title": "Casual μέχρι εκατό ευρώ",
+        "subtitle": "Καθημερινά κομμάτια που δεν ξεπερνούν τον προϋπολογισμό μου"
+      },
+      {
+        "query": "Θέλω να δω μοντέρνα ρούχα και κομμάτια που είναι πολύ στη μόδα τώρα για την τρέχουσα σεζόν, για ανανέωση στη γκαρνταρόμπα μου",
+        "title": "Κομμάτια που «παίζουν» τώρα",
+        "subtitle": "Να δω τι ταιριάζει σε αυτή την εποχή στο κατάστημά σας"
+      },
+      {
+        "query": "Πρότεινέ μου ένα κομψό σύνολο για βραδινή έξοδο, εστιατόριο ή ποτό, με ιδέες για παπούτσια και αξεσουάρ",
+        "title": "Κομψό look για βράδυ",
+        "subtitle": "Έξοδος σε εστιατόριο ή ποτό, όχι υπερβολικά επίσημο"
+      }
+    ]
+  },
+  "sidebar": {
+    "newChat": "New",
+    "settings": "Settings",
+    "emptyState": "No conversations yet"
+  },
+  "header": {
+    "sidebarToggleTitle": "Toggle sidebar",
+    "clearTitle": "Clear chat",
+    "exportTitle": "Export conversation (Markdown)"
+  },
+  "onboarding": {
+    "title": "Καλώς ήρθες στο Mosty",
+    "bullets": [
+      "Ρώτα για στυλ, μεγέθη και προτάσεις προϊόντων στα ελληνικά ή αγγλικά.",
+      "Μπορείς να εφαρμόσεις φίλτρα από τις προτάσεις ή τη γραμμή φίλτρων κάτω από το header.",
+      "Η συνομιλία αποθηκεύεται τοπικά· με API key μπορείς να συγχρονίσεις με τον server."
+    ],
+    "dismissButton": "Ξεκινάμε"
+  },
+  "composer": {
+    "placeholder": "Ask anything about products, styles, outfits...",
+    "hint": "Enter to send · Shift+Enter for new line"
+  },
+  "settings": {
+    "title": "Settings",
+    "apiKeyLabel": "API Key",
+    "apiKeyPlaceholder": "Enter your API key",
+    "apiKeyHint": "Required to authenticate with the Mosty API",
+    "languageLabel": "Language",
+    "languages": [
+      { "value": "auto", "label": "Auto-detect" },
+      { "value": "el", "label": "Greek" },
+      { "value": "en", "label": "English" }
+    ],
+    "saveButton": "Save settings",
+    "saveToast": "Settings saved"
+  },
+  "strings": {
+    "assistantLabel": "ELIZA AI AGENT",
+    "thinking": "Thinking...",
+    "sourcesLabel": "Sources",
+    "popularSection": "Popular now",
+    "recommendationsSection": "Recommendations",
+    "viewProduct": "View Product",
+    "inStock": "In stock",
+    "sessionError": "Failed to create session. Check API key in Settings.",
+    "genericError": "Something went wrong.",
+    "failedCopy": "Failed to copy",
+    "carouselPrev": "Previous products",
+    "carouselNext": "Next products",
+    "carouselPages": "Carousel pages",
+    "copyTitle": "Copy",
+    "filtersApplied": "Filters applied to the next message",
+    "filtersCleared": "Filters cleared",
+    "exportEmpty": "Nothing to export yet",
+    "exportCopied": "Conversation copied to clipboard",
+    "exportFailed": "Could not copy",
+    "loadMessagesFailed": "Could not load conversation",
+    "mapOpenMaps": "Άνοιγμα στους Χάρτες",
+    "mapEmbedFallback": "If the map does not load, use the link above."
+  }
+}

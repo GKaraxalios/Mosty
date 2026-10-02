@@ -1,0 +1,57 @@
+# ═══════════════════════════════════════════════════════════════════
+# MostyAPI — Docker build exclusions
+# ═══════════════════════════════════════════════════════════════════
+
+# Secrets
+.env
+.env.*
+!.env.example
+!.env.gcloud.example
+*-sa-key.json
+*-credentials.json
+*service-account*.json
+credentials/
+mosty-sa-key.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Data / state (use GCS in production)
+data/
+
+# Git
+.git/
+.gitignore
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing / tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Docs / scripts not needed in image
+docs/
+*.md
+*.log
+*.pid
+
+# Shell scripts (not needed in container)
+git_push.sh
+git_pull.sh
+quick_start.sh
+setup_mosty_api.sh

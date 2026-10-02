@@ -1,0 +1,81 @@
+# ═══════════════════════════════════════════════════════════════════
+# MostyAPI — Google Cloud Build pipeline
+# ═══════════════════════════════════════════════════════════════════
+# Triggered manually or via GitHub push.
+#
+# Required substitution variables (set in Cloud Build trigger or CLI):
+#   _REGION            – e.g. europe-west1
+#   _SERVICE_NAME      – e.g. mostyapi
+#   _CLOUD_SQL_CONN    – e.g. my-project:europe-west1:mosty-db
+#   _MIN_INSTANCES     – e.g. 0  (scale to zero) or 1
+#   _MAX_INSTANCES     – e.g. 4
+#   _MEMORY            – e.g. 1Gi
+#   _CPU               – e.g. 1
+#
+# Usage:
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_REGION=europe-west1,_SERVICE_NAME=mostyapi,...
+# ═══════════════════════════════════════════════════════════════════
+
+substitutions:
+  _REGION: europe-west1
+  _SERVICE_NAME: mostyapi
+  _CLOUD_SQL_CONN: ""
+  _MIN_INSTANCES: "0"
+  _MAX_INSTANCES: "4"
+  _MEMORY: "1Gi"
+  _CPU: "1"
+
+steps:
+  # Step 1: Build the container image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/mostyapi/${_SERVICE_NAME}:${SHORT_SHA}"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/mostyapi/${_SERVICE_NAME}:latest"
+      - "."
+
+  # Step 2: Push to Artifact Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/mostyapi/${_SERVICE_NAME}"
+
+  # Step 3: Deploy to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "${_SERVICE_NAME}"
+      - "--image"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/mostyapi/${_SERVICE_NAME}:${SHORT_SHA}"
+      - "--region"
+      - "${_REGION}"
+      - "--platform"
+      - "managed"
+      - "--port"
+      - "8080"
+      - "--memory"
+      - "${_MEMORY}"
+      - "--cpu"
+      - "${_CPU}"
+      - "--min-instances"
+      - "${_MIN_INSTANCES}"
+      - "--max-instances"
+      - "${_MAX_INSTANCES}"
+      - "--add-cloudsql-instances"
+      - "${_CLOUD_SQL_CONN}"
+      - "--allow-unauthenticated"
+      - "--set-env-vars"
+      - "APP_ENV=production"
+
+images:
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/mostyapi/${_SERVICE_NAME}:${SHORT_SHA}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/mostyapi/${_SERVICE_NAME}:latest"
+
+options:
+  logging: CLOUD_LOGGING_ONLY

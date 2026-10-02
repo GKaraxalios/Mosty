@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1.0",
+  "variant": "simple",
+  "page": {
+    "documentTitle": "Mosty Chat",
+    "title": "Mosty Chat",
+    "brandName": "Mosty",
+    "modelTag": "Assistant",
+    "version": "dev"
+  },
+  "theme": {
+    "cssVariables": {}
+  },
+  "dataSources": {
+    "endpoints": {
+      "sessionCreate": "/api/v1/chat/session",
+      "ask": "/api/v1/chat/ask",
+      "sessionDelete": "/api/v1/chat/session/{sessionId}"
+    },
+    "defaults": {
+      "top_k": 8,
+      "temperature": 0.2
+    }
+  },
+  "welcome": {
+    "title": "Mosty Chat",
+    "subtitle": "Ask about products",
+    "suggestions": [
+      {
+        "query": "Θέλω ένα φόρεμα για καλοκαιρινό γάμο ως καλεσμένη, κομψό και κατάλληλο για εκκλησία και δεξίωση",
+        "title": "Φόρεμα για γάμο το καλοκαίρι",
+        "subtitle": "Κομψό look για καλεσμένη, όχι νυφικό"
+      },
+      {
+        "query": "Δείξε μου casual ρούχα μέχρι 100 ευρώ για καθημερινή χρήση",
+        "title": "Καθημερινά μέχρι εκατό ευρώ",
+        "subtitle": "Σύνολα που μπορώ να φοράω συχνά χωρίς να ξεφύγω από budget"
+      }
+    ]
+  },
+  "sidebar": {
+    "newChat": "New",
+    "settings": "Settings",
+    "emptyState": "No chats"
+  },
+  "header": {
+    "sidebarToggleTitle": "Menu",
+    "clearTitle": "Clear"
+  },
+  "composer": {
+    "placeholder": "Message…",
+    "hint": "Enter to send"
+  },
+  "settings": {
+    "title": "Settings",
+    "apiKeyLabel": "API Key",
+    "apiKeyPlaceholder": "Key",
+    "apiKeyHint": "Required for API",
+    "languageLabel": "Language",
+    "languages": [
+      { "value": "auto", "label": "Auto" },
+      { "value": "el", "label": "EL" },
+      { "value": "en", "label": "EN" }
+    ],
+    "saveButton": "Save",
+    "saveToast": "Saved"
+  },
+  "strings": {
+    "assistantLabel": "Assistant",
+    "thinking": "…",
+    "sourcesLabel": "Sources",
+    "popularSection": "Popular",
+    "recommendationsSection": "Picks",
+    "viewProduct": "Open",
+    "inStock": "In stock",
+    "sessionError": "Session failed",
+    "genericError": "Error",
+    "failedCopy": "Copy failed",
+    "carouselPrev": "Prev",
+    "carouselNext": "Next",
+    "carouselPages": "Pages",
+    "copyTitle": "Copy"
+  }
+}

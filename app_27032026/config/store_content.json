@@ -1,0 +1,108 @@
+{
+  "el": {
+    "store_name": "MOSTY",
+    "site_url": "https://mosty.com",
+    "customer_care_phone": "+30 2152157007",
+    "customer_care_email": "info@mosty.com",
+    "support_hours": [
+      {"day": "Δευτέρα", "hours": "10:00–18:00"},
+      {"day": "Τρίτη", "hours": "10:00–20:00"},
+      {"day": "Τετάρτη", "hours": "10:00–18:00"},
+      {"day": "Πέμπτη", "hours": "10:00–20:00"},
+      {"day": "Παρασκευή", "hours": "10:00–20:00"},
+      {"day": "Σάββατο", "hours": "10:00–16:00"},
+      {"day": "Κυριακή", "hours": "κλειστά"}
+    ],
+    "stores": [
+      {
+        "name": "Mosty Showroom",
+        "address": "Αγίου Τρύφωνος 43Α, Κηφισιά 145 62",
+        "phone": "+30 2152157007",
+        "hours": "Δευτέρα 10:00–18:00, Τρίτη 10:00–20:00, Τετάρτη 10:00–18:00, Πέμπτη 10:00–20:00, Παρασκευή 10:00–20:00, Σάββατο 10:00–16:00, Κυριακή κλειστά"
+      },
+      {
+        "name": "Mosty Κέα - Εποχιακό κατάστημα",
+        "address": "Βουρκάρι, Κέα 840 02",
+        "phone": "+30 2288 028194",
+        "season": "Λειτουργεί τους μήνες Μάιο–Σεπτέμβριο",
+        "hours": "Δευτέρα–Σάββατο 11:00–23:00"
+      }
+    ],
+    "links": {
+      "home": "https://mosty.com",
+      "shop": "https://mosty.com/shop",
+      "new_arrivals": "https://mosty.com/new-arrivals",
+      "sale": "https://mosty.com/sale",
+      "contact": "https://mosty.com/contact",
+      "opening_hours": "https://mosty.com/opening-hours",
+      "stores": "https://mosty.com/katastimata",
+      "returns": "https://mosty.com/returns",
+      "shipping": "https://mosty.com/shipping",
+      "shipping_page": "https://mosty.com/shipping-page",
+      "order_payment": "https://mosty.com/order-payment",
+      "terms": "https://mosty.com/terms-and-conditions-of-use",
+      "instagram": "https://instagram.com/mosty",
+      "facebook": "https://facebook.com/mosty"
+    },
+    "payment_summary": "Τρόποι πληρωμής: Klarna, Stripe, Iris. Περισσότερα",
+    "payment_methods": ["Klarna", "Stripe (πιστωτική / χρεωστική κάρτα)", "IRIS"],
+    "shipping_intro": "Η MOSTY αποστέλλει παγκοσμίως.",
+    "shipping_methods": ["Speedex (Ελλάδα)", "Courier Center (Ελλάδα)", "BoxNow (Ελλάδα – Lockers)", "DHL Express (Εξωτερικό)"],
+    "shipping_summary": "Η MOSTY αποστέλλει παγκοσμίως. Εντός Ελλάδας συνεργάζεται με Speedex, Courier Center και BoxNow, ενώ για το εξωτερικό με DHL Express. Οι παραγγελίες συνήθως επεξεργάζονται εντός 48 ωρών και οι παραδόσεις γίνονται συνήθως εντός 2–7 ημερών. Όταν αποσταλεί η παραγγελία, ο πελάτης λαμβάνει email με αριθμό παραγγελίας και tracking.",
+    "shipping_support_note": "Για ερωτήσεις σχετικά με αποστολές, παράδοση, courier, tracking, χρόνους επεξεργασίας, διεθνείς αποστολές ή διαθεσιμότητα αποστολής ανά χώρα, κατεύθυνε στο shipping_page link.",
+    "terms_support_note": "Για οποιαδήποτε ερώτηση σχετικά με όρους χρήσης, νομικές πληροφορίες, χρήση του site, παράπονα, δικαιώματα ή υποχρεώσεις πελάτη, κατεύθυνε στο terms link."
+  },
+  "en": {
+    "store_name": "MOSTY",
+    "site_url": "https://mosty.com",
+    "customer_care_phone": "+30 2152157007",
+    "customer_care_email": "info@mosty.com",
+    "support_hours": [
+      {"day": "Monday", "hours": "10:00–18:00"},
+      {"day": "Tuesday", "hours": "10:00–20:00"},
+      {"day": "Wednesday", "hours": "10:00–18:00"},
+      {"day": "Thursday", "hours": "10:00–20:00"},
+      {"day": "Friday", "hours": "10:00–20:00"},
+      {"day": "Saturday", "hours": "10:00–16:00"},
+      {"day": "Sunday", "hours": "closed"}
+    ],
+    "stores": [
+      {
+        "name": "Mosty Showroom",
+        "address": "Agiou Tryfonos 43A, Kifisia 145 62",
+        "phone": "+30 2152157007",
+        "hours": "Monday 10:00–18:00, Tuesday 10:00–20:00, Wednesday 10:00–18:00, Thursday 10:00–20:00, Friday 10:00–20:00, Saturday 10:00–16:00, Sunday closed"
+      },
+      {
+        "name": "Mosty Kea - Seasonal Store",
+        "address": "Vourkari, Kea 840 02",
+        "phone": "+30 2288 028194",
+        "season": "Open during May–September",
+        "hours": "Monday–Saturday 11:00–23:00"
+      }
+    ],
+    "links": {
+      "home": "https://mosty.com",
+      "shop": "https://mosty.com/shop",
+      "new_arrivals": "https://mosty.com/new-arrivals",
+      "sale": "https://mosty.com/sale",
+      "contact": "https://mosty.com/contact",
+      "opening_hours": "https://mosty.com/opening-hours",
+      "stores": "https://mosty.com/katastimata",
+      "returns": "https://mosty.com/returns",
+      "shipping": "https://mosty.com/shipping",
+      "shipping_page": "https://mosty.com/shipping-page",
+      "order_payment": "https://mosty.com/order-payment",
+      "terms": "https://mosty.com/terms-and-conditions-of-use",
+      "instagram": "https://instagram.com/mosty",
+      "facebook": "https://facebook.com/mosty"
+    },
+    "payment_summary": "Payment methods: Klarna, Stripe, Iris. More info",
+    "payment_methods": ["Klarna", "Stripe (credit / debit card)", "IRIS"],
+    "shipping_intro": "MOSTY ships worldwide.",
+    "shipping_methods": ["Speedex (Greece)", "Courier Center (Greece)", "BoxNow (Greece – Lockers)", "DHL Express (International)"],
+    "shipping_summary": "MOSTY ships worldwide. Orders within Greece are handled via Speedex, Courier Center and BoxNow, while international shipments are handled via DHL Express. Orders are usually processed within 48 hours and deliveries are generally completed within 2–7 days. Once shipped, the customer receives an email with the order number and tracking number.",
+    "shipping_support_note": "For questions about shipping, delivery, courier options, tracking, processing times, international delivery, or shipping availability by country, direct users to the shipping_page link.",
+    "terms_support_note": "For any question about terms of use, legal information, website usage, complaints, customer rights or obligations, direct users to the terms link."
+  }
+}

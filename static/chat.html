@@ -1,0 +1,2652 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ELIZA AI AGENT — Shopping Assistant</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/mosty-theme.css?__VER_mosty-theme.css__">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  /* Layout tokens (chat UI only; colors → /static/css/mosty-theme.css) */
+  --sidebar-w:272px;--header-h:52px;--chat-max:780px;
+}
+
+html{height:100%;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{
+  height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--bg-base);color:var(--text-primary);line-height:1.6;overflow:hidden;
+  background-image:radial-gradient(rgba(0,0,0,.04) 1px,transparent 1px);
+  background-size:20px 20px;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(0,0,0,.03),transparent 70%);
+}
+a{color:var(--text-primary);text-decoration:underline;text-decoration-color:rgba(0,0,0,.22);text-underline-offset:2px;transition:color var(--dur-fast) var(--ease),text-decoration-color var(--dur-fast) var(--ease)}
+a:hover{color:var(--accent-hover);text-decoration-color:rgba(0,0,0,.55)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;-webkit-tap-highlight-color:transparent}
+textarea{font-family:inherit;color:inherit;border:none;background:none;resize:none}
+textarea:focus,button:focus-visible{outline:none}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.2)}
+
+.app{display:flex;height:100vh;width:100vw;overflow:hidden;position:relative;z-index:1}
+
+.skip-to-messages{
+  position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;
+  z-index:200;padding:8px 12px;background:var(--bg-elevated);border:1px solid var(--border);
+  border-radius:var(--r-sm);font-size:12px;color:var(--text-primary);
+}
+.skip-to-messages:focus{left:12px;top:60px;width:auto;height:auto;outline:2px solid var(--border-focus)}
+
+.offline-banner{
+  flex-shrink:0;padding:8px 16px;font-size:12px;color:var(--text-secondary);
+  background:rgba(248,113,113,.08);border-bottom:1px solid rgba(248,113,113,.2);
+  text-align:center;
+}
+/* ── Sidebar ─────────────────────────────────────────────────────── */
+.sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);height:100vh;
+  display:flex;flex-direction:column;
+  background:var(--bg-subtle);border-right:1px solid var(--border-subtle);
+  transition:transform var(--dur-base) var(--ease),opacity var(--dur-base) var(--ease),
+              min-width var(--dur-base) var(--ease),width var(--dur-base) var(--ease);
+  z-index:40;
+}
+.sidebar.collapsed{transform:translateX(-100%);opacity:0;min-width:0;width:0;overflow:hidden}
+
+.sidebar-head{
+  padding:14px 14px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.brand{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.brand-mark{
+  width:28px;height:28px;border-radius:var(--r-sm);
+  background:var(--gradient-accent);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
+.mosty-logo-mark{
+  display:block;flex-shrink:0;width:22px;height:auto;max-height:20px;color:#fff;
+}
+.msg-ava.msg-ava--ai{overflow:hidden;padding:0}
+.msg-ava__img.msg-ava__img--ai{
+  width:100%;height:100%;display:block;object-fit:cover;object-position:center center;
+}
+.welcome-glow .icon-circle .msg-ava__img--ai{border-radius:inherit}
+.brand-name{
+  font-size:14px;font-weight:700;letter-spacing:-.03em;
+  color:var(--text-primary);
+}
+
+.new-chat-btn{
+  height:32px;padding:0 12px;border-radius:var(--r-sm);
+  font-size:12px;font-weight:500;color:var(--text-secondary);
+  border:1px solid var(--border);display:flex;align-items:center;gap:5px;
+  transition:all var(--dur-fast) var(--ease);
+}
+.new-chat-btn:hover{background:var(--bg-hover);border-color:var(--border-hover);color:var(--text-primary)}
+
+.sidebar-list{flex:1;overflow-y:auto;padding:6px 8px}
+.sidebar-section-label{
+  padding:8px 10px 4px;font-size:10px;font-weight:600;
+  color:var(--text-faint);letter-spacing:.06em;text-transform:uppercase;
+}
+.sidebar-item{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:var(--r-sm);font-size:13px;color:var(--text-secondary);
+  transition:all var(--dur-fast) var(--ease);cursor:pointer;
+  margin-bottom:1px;position:relative;overflow:hidden;
+}
+.sidebar-item::before{
+  content:'';position:absolute;left:0;top:6px;bottom:6px;width:2px;
+  background:var(--accent);border-radius:1px;opacity:0;
+  transition:opacity var(--dur-fast);
+}
+.sidebar-item:hover{background:var(--bg-card);color:var(--text-primary)}
+.sidebar-item.active{background:var(--bg-elevated);color:var(--text-primary)}
+.sidebar-item.active::before{opacity:1}
+.sidebar-item .item-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sidebar-item .item-delete{
+  flex-shrink:0;opacity:0;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);transition:all var(--dur-fast);
+}
+.sidebar-item .item-share{
+  flex-shrink:0;opacity:0;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);transition:all var(--dur-fast);
+}
+.sidebar-item:hover .item-delete{opacity:.4}
+.sidebar-item:hover .item-share{opacity:.5}
+.sidebar-item .item-delete:hover{opacity:1;background:rgba(248,113,113,.12);color:var(--error)}
+.sidebar-item .item-share:hover{opacity:1;background:rgba(0,0,0,.06);color:var(--accent-light)}
+
+.sidebar-foot{
+  padding:10px 14px;border-top:1px solid var(--border-subtle);flex-shrink:0;
+  display:flex;align-items:center;gap:6px;
+}
+.settings-btn{
+  display:flex;align-items:center;gap:7px;padding:7px 10px;flex:1;
+  border-radius:var(--r-sm);font-size:12px;font-weight:500;color:var(--text-muted);
+  transition:all var(--dur-fast) var(--ease);
+}
+.settings-btn:hover{background:var(--bg-card);color:var(--text-secondary)}
+.version-tag{font-size:10px;color:var(--text-faint);margin-left:auto;font-weight:500}
+
+/* ── Main ────────────────────────────────────────────────────────── */
+.chat-main{flex:1;display:flex;flex-direction:column;height:100vh;min-width:0;min-height:0;position:relative}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.chat-header{
+  height:var(--header-h);flex-shrink:0;
+  display:flex;align-items:center;gap:10px;padding:0 16px;
+  border-bottom:1px solid var(--border-subtle);
+  background:rgba(255,255,255,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  z-index:20;
+}
+.sidebar-toggle{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);color:var(--text-muted);transition:all var(--dur-fast) var(--ease);
+}
+.sidebar-toggle:hover{background:var(--bg-hover);color:var(--text-secondary)}
+
+.header-center{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+.header-center h1{font-size:14px;font-weight:600;letter-spacing:-.02em}
+.model-tag{
+  font-size:10px;font-weight:500;letter-spacing:.02em;
+  padding:2px 8px;border-radius:var(--r-full);
+  background:var(--accent-dim);color:var(--text-secondary);
+  border:1px solid var(--border-subtle);
+}
+
+.header-actions{display:flex;gap:4px}
+.icon-btn{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);color:var(--text-muted);
+  transition:all var(--dur-fast) var(--ease);
+}
+.icon-btn:hover{background:var(--bg-hover);color:var(--text-secondary)}
+
+/* ── Chat Area ───────────────────────────────────────────────────── */
+.chat-scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  display:flex;flex-direction:column;
+}
+.chat-inner{
+  max-width:var(--chat-max);width:100%;margin:0 auto;
+  padding:20px 24px 8px;flex:1;display:flex;flex-direction:column;
+}
+
+/* ── Welcome ─────────────────────────────────────────────────────── */
+.welcome{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px;text-align:center;animation:fadeUp .7s var(--ease) both;
+}
+.welcome-glow{
+  position:relative;width:64px;height:64px;margin-bottom:24px;
+}
+.welcome-glow::before{
+  content:'';position:absolute;inset:-16px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,0,0,.08),transparent 70%);
+  animation:iconPulse 3s ease-in-out infinite alternate;
+}
+.welcome-glow .icon-circle{
+  position:relative;width:64px;height:64px;border-radius:var(--r-lg);
+  background:var(--bg-elevated);
+  border:1px solid var(--border-subtle);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;padding:0;
+  box-shadow:0 4px 24px rgba(0,0,0,.12),var(--shadow-md);
+}
+.welcome h2{
+  font-size:28px;font-weight:700;letter-spacing:-.04em;margin-bottom:8px;
+  color:var(--text-primary);
+}
+.welcome p{color:var(--text-muted);font-size:15px;font-weight:400;margin-bottom:40px}
+
+.sug-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-width:540px}
+.sug-card{
+  display:flex;flex-direction:column;gap:6px;padding:16px 18px;
+  background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--r-md);
+  text-align:left;transition:all var(--dur-base) var(--ease);position:relative;overflow:hidden;
+}
+.sug-card::before{
+  content:'';position:absolute;inset:0;border-radius:var(--r-md);
+  background:linear-gradient(135deg,rgba(0,0,0,.04),transparent 60%);
+  opacity:0;transition:opacity var(--dur-base);
+}
+.sug-card:hover{
+  background:var(--bg-elevated);border-color:var(--border-hover);
+  transform:translateY(-2px);box-shadow:var(--shadow-md);
+}
+.sug-card:hover::before{opacity:1}
+.sug-card .sug-title{font-size:13px;font-weight:500;color:var(--text-primary);position:relative}
+.sug-card .sug-sub{font-size:12px;color:var(--text-muted);line-height:1.4;position:relative}
+
+/* ── Messages ────────────────────────────────────────────────────── */
+.msg{display:flex;gap:14px;padding:24px 0;animation:fadeUp .4s var(--ease) both}
+.msg+.msg{border-top:1px solid var(--border-subtle)}
+.msg--user{flex-direction:row-reverse}
+.msg--user .msg-body{align-items:flex-end}
+
+.msg-ava{
+  width:30px;height:30px;border-radius:var(--r-sm);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;margin-top:2px;
+}
+.msg-ava--ai{background:var(--bg-elevated);border:1px solid var(--border-subtle);box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.msg-ava--user{background:var(--bg-elevated);border:1px solid var(--border)}
+
+.msg-body{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.msg-label{font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase}
+
+.msg-text{font-size:14.5px;line-height:1.75;color:var(--text-primary);overflow-wrap:break-word}
+.msg--user .msg-text{
+  background:var(--gradient-user);color:#fff;
+  padding:11px 18px;border-radius:var(--r-xl) var(--r-xl) 4px var(--r-xl);
+  max-width:80%;font-size:14px;line-height:1.65;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+}
+
+.msg-text h1,.msg-text h2,.msg-text h3{margin:14px 0 6px;font-weight:600;letter-spacing:-.02em;color:var(--text-primary)}
+.msg--user .msg-text h1,.msg--user .msg-text h2,.msg--user .msg-text h3{color:#fff}
+.msg-text h1{font-size:18px}.msg-text h2{font-size:16px}.msg-text h3{font-size:14.5px}
+.msg-text p{margin:0 0 10px}.msg-text p:last-child{margin:0}
+.msg-text ul,.msg-text ol{margin:6px 0;padding-left:18px}
+.msg-text li{margin:3px 0}
+.msg-text li::marker{color:var(--text-muted)}
+.msg-text strong{font-weight:600;color:inherit}
+.msg--user .msg-text strong{font-weight:600;color:#fff}
+.msg-text em{color:var(--text-secondary)}
+.msg--user .msg-text em{color:rgba(255,255,255,.82)}
+.msg-text code{
+  font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:12px;
+  background:rgba(0,0,0,.05);padding:2px 6px;border-radius:4px;
+  border:1px solid var(--border-subtle);
+}
+.msg-text pre{
+  background:rgba(0,0,0,.04);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:16px;margin:10px 0;overflow-x:auto;
+}
+.msg-text pre code{background:none;padding:0;border:none;font-size:12.5px}
+.msg-text blockquote{
+  border-left:2px solid var(--accent);padding:2px 0 2px 14px;margin:8px 0;
+  color:var(--text-secondary);
+}
+.msg-text a{color:var(--text-primary);text-decoration:underline;text-decoration-color:rgba(0,0,0,.28);text-underline-offset:2px}
+.msg-text a:hover{text-decoration-color:rgba(0,0,0,.55)}
+.msg--user .msg-text a{color:#fff;text-decoration-color:rgba(255,255,255,.45)}
+.msg--user .msg-text a:hover{text-decoration-color:#fff}
+.msg-text hr{border:none;border-top:1px solid var(--border-subtle);margin:16px 0}
+.msg-text table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+.msg-text th,.msg-text td{padding:8px 12px;border:1px solid var(--border);text-align:left}
+.msg-text th{background:var(--bg-card);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-secondary)}
+
+.msg-cursor{display:inline-block;width:2px;height:15px;background:var(--accent);margin-left:2px;vertical-align:text-bottom;animation:blink .7s step-end infinite}
+
+.msg-actions{display:flex;gap:2px;opacity:0;transition:opacity var(--dur-fast)}
+.msg:hover .msg-actions{opacity:1}
+.act-btn{
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);color:var(--text-faint);transition:all var(--dur-fast) var(--ease);
+}
+.act-btn:hover{background:var(--bg-hover);color:var(--text-secondary)}
+.act-btn.copied{color:var(--success)}
+
+/* ── Product Cards ───────────────────────────────────────────────── */
+.sources{margin-top:12px}
+.sources-label{
+  display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;
+  color:var(--text-faint);letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:8px;
+}
+.sources-label svg{opacity:.5}
+.sources-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+
+/* ── Sources Slider (carousel) ───────────────────────────────────── */
+.sources-slider{
+  display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;position:relative;
+  --slider-gap:8px;--cards-per-view:1;
+}
+.sources-slider-viewport{
+  flex:1;min-width:0;overflow:hidden;position:relative;
+}
+.sources-slider-track{
+  display:flex;gap:var(--slider-gap);overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;-ms-overflow-style:none;
+  padding:2px 0;
+}
+.sources-slider-track::-webkit-scrollbar{display:none}
+.sources-slider .sources-grid.sources-slider-track{
+  display:flex;grid-template-columns:unset;
+}
+.sources-slider .sources-grid .product-card{
+  flex:0 0 auto;
+  width:calc((100% - (var(--cards-per-view) - 1) * var(--slider-gap)) / var(--cards-per-view));
+  min-width:0;
+  scroll-snap-align:start;scroll-snap-stop:always;
+}
+.sources-slider-btn{
+  flex-shrink:0;width:32px;height:32px;border-radius:var(--r-full);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg-elevated);border:1px solid var(--border-subtle);
+  color:var(--text-secondary);transition:all var(--dur-fast) var(--ease);
+  align-self:center;
+}
+.sources-slider-btn:hover:not(:disabled){background:var(--bg-hover);color:var(--text-primary);border-color:var(--border)}
+.sources-slider-btn:disabled{opacity:.35;cursor:not-allowed}
+.sources-slider-btn svg{width:14px;height:14px}
+.sources-dots{
+  flex-basis:100%;width:100%;
+  display:flex;justify-content:center;gap:6px;margin-top:10px;flex-wrap:wrap;
+}
+.sources-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--border);
+  transition:all var(--dur-fast) var(--ease);cursor:pointer;
+  padding:0;border:none;
+}
+.sources-dot:hover{background:var(--text-muted)}
+.sources-dot.active{background:var(--accent);transform:scale(1.2)}
+@media(min-width:480px){
+  .sources-slider{--cards-per-view:2}
+}
+@media(min-width:768px){
+  .sources-slider{--cards-per-view:3}
+}
+@media(min-width:1100px){
+  .sources-slider{--cards-per-view:4}
+}
+
+.product-card{
+  display:flex;flex-direction:column;gap:0;
+  background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--r-lg);
+  text-decoration:none;color:inherit;overflow:hidden;
+  transition:all var(--dur-base) var(--ease);
+  animation:sourceSlide .35s var(--ease) both;
+}
+.product-card:nth-child(2){animation-delay:.05s}
+.product-card:nth-child(3){animation-delay:.1s}
+.product-card:nth-child(4){animation-delay:.15s}
+.product-card:nth-child(5){animation-delay:.2s}
+.product-card:nth-child(6){animation-delay:.25s}
+.product-card:hover{
+  border-color:var(--border-hover);
+  transform:translateY(-3px);box-shadow:var(--shadow-lg);text-decoration:none;
+}
+.product-img-wrap{
+  width:100%;aspect-ratio:3/4;overflow:hidden;background:var(--bg-elevated);
+  display:flex;align-items:center;justify-content:center;position:relative;
+}
+.product-img-wrap img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform var(--dur-slow) var(--ease);
+}
+.product-card:hover .product-img-wrap img{transform:scale(1.04)}
+.product-img-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:36px;font-weight:700;color:var(--text-faint);
+}
+.product-badge{
+  position:absolute;top:8px;left:8px;
+  font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  padding:3px 8px;border-radius:var(--r-full);
+  background:rgba(52,211,153,.15);color:var(--success);
+  backdrop-filter:blur(8px);border:1px solid rgba(52,211,153,.2);
+}
+.product-badge--popular{
+  background:rgba(0,0,0,.06);color:var(--text-primary);
+  border-color:var(--border);
+}
+.product-info{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.product-info h4{
+  font-size:13px;font-weight:500;color:var(--text-primary);
+  line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.product-price-row{display:flex;align-items:center;gap:8px}
+.product-price{font-size:15px;font-weight:700;color:var(--text-primary);letter-spacing:-.01em}
+.product-currency{font-size:11px;font-weight:500;color:var(--text-muted)}
+.product-styling{font-size:11.5px;color:var(--text-secondary);line-height:1.4;font-style:italic}
+.product-cta{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px;margin:0 14px 12px;
+  font-size:11px;font-weight:600;letter-spacing:.02em;
+  color:var(--text-primary);background:var(--accent-dim);
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  transition:all var(--dur-fast) var(--ease);
+}
+.product-card:hover .product-cta{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Thinking ────────────────────────────────────────────────────── */
+.thinking{display:flex;gap:14px;padding:24px 0;animation:fadeUp .3s var(--ease) both}
+.thinking-body{display:flex;align-items:center;gap:10px;padding:4px 0}
+.thinking-dots{display:flex;gap:4px}
+.thinking-dot{
+  width:5px;height:5px;border-radius:50%;background:var(--accent);
+  animation:dotBounce 1.4s var(--ease-in-out) infinite;
+}
+.thinking-dot:nth-child(2){animation-delay:.15s}
+.thinking-dot:nth-child(3){animation-delay:.3s}
+.thinking-label{font-size:12px;color:var(--text-muted);font-weight:500}
+
+/* ── Input ───────────────────────────────────────────────────────── */
+.chat-input-area{flex-shrink:0;padding:0 24px 20px;position:relative}
+.shared-banner{
+  margin:12px 0 14px;
+  display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--text-secondary);
+  padding:10px 12px;border:1px solid var(--border);
+  background:rgba(0,0,0,.04);border-radius:var(--r-md);
+}
+.mode-shared #newChatBtn,
+.mode-shared #settingsBtn,
+.mode-shared #clearChatBtn,
+.mode-shared #exportChatBtn,
+.mode-shared .item-delete,
+.mode-shared .item-share{
+  display:none !important;
+}
+.mode-shared-readonly .chat-input-area{display:none !important}
+.mode-shared #attachBtn{display:none !important}
+.input-wrapper{max-width:var(--chat-max);margin:0 auto;position:relative}
+.input-glow{
+  position:absolute;inset:-1px;border-radius:var(--r-xl);z-index:0;
+  background:linear-gradient(135deg,rgba(0,0,0,.06),transparent 45%,transparent 55%,rgba(0,0,0,.04));
+  opacity:0;transition:opacity var(--dur-base) var(--ease);pointer-events:none;
+}
+.input-wrapper:focus-within .input-glow{opacity:1}
+.input-box{
+  position:relative;z-index:1;display:flex;align-items:flex-end;gap:8px;
+  background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-xl);
+  padding:12px 14px 12px 20px;
+  transition:all var(--dur-base) var(--ease);box-shadow:var(--shadow-sm);
+}
+.input-wrapper:focus-within .input-box{
+  border-color:var(--border-focus);background:var(--bg-card);
+  box-shadow:var(--shadow-md),0 0 0 1px rgba(0,0,0,.04);
+}
+#chatInput{
+  flex:1;min-height:24px;max-height:150px;
+  font-size:14px;line-height:1.6;color:var(--text-primary);padding:2px 0;
+}
+#chatInput::placeholder{color:var(--text-faint)}
+
+.send-btn{
+  width:36px;height:36px;border-radius:var(--r-md);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg-elevated);color:var(--text-faint);
+  transition:all var(--dur-base) var(--ease);
+}
+.send-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.15)}
+.send-btn.active:hover{background:var(--accent-hover);transform:scale(1.05)}
+.send-btn.active:active{transform:scale(.93)}
+
+.attach-btn{
+  width:36px;height:36px;border-radius:var(--r-md);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-muted);transition:all var(--dur-fast) var(--ease);
+}
+.attach-btn:hover{color:var(--text-secondary);background:var(--bg-hover)}
+.stop-btn.send-btn{
+  background:rgba(248,113,113,.12)!important;color:#f87171!important;
+}
+.stop-btn.send-btn:hover{background:rgba(248,113,113,.22)!important}
+
+.input-hint{text-align:center;font-size:10.5px;color:var(--text-faint);margin-top:8px;letter-spacing:.01em}
+
+/* ── Modal ───────────────────────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:100;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity var(--dur-base) var(--ease);
+}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal-overlay.open .modal-card{transform:translateY(0) scale(1);opacity:1}
+
+.modal-card{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-2xl);
+  width:100%;max-width:420px;padding:28px;
+  box-shadow:var(--shadow-lg);
+  transform:translateY(12px) scale(.97);opacity:0;
+  transition:all var(--dur-base) var(--ease);
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.modal-head h3{font-size:16px;font-weight:600;letter-spacing:-.02em}
+.modal-close{
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);color:var(--text-muted);transition:all var(--dur-fast) var(--ease);
+}
+.modal-close:hover{background:var(--bg-hover);color:var(--text-secondary)}
+
+.field{margin-bottom:18px}
+.field-label{display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase}
+.field-input{
+  width:100%;padding:10px 14px;font-size:13px;font-family:inherit;
+  background:var(--bg-base);border:1px solid var(--border);border-radius:var(--r-sm);
+  color:var(--text-primary);transition:all var(--dur-fast) var(--ease);
+}
+.field-input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(0,0,0,.06);outline:none}
+.field-input::placeholder{color:var(--text-faint)}
+.field-hint{font-size:10.5px;color:var(--text-faint);margin-top:5px}
+
+.field-select{
+  width:100%;padding:10px 14px;font-size:13px;font-family:inherit;
+  background:var(--bg-base);border:1px solid var(--border);border-radius:var(--r-sm);
+  color:var(--text-primary);cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c5c72' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  transition:all var(--dur-fast) var(--ease);
+}
+.field-select:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(0,0,0,.06);outline:none}
+
+.btn-save{
+  width:100%;padding:10px;font-size:13px;font-weight:600;
+  background:var(--accent);color:#fff;border-radius:var(--r-sm);
+  transition:all var(--dur-fast) var(--ease);margin-top:6px;
+}
+.btn-save:hover{background:var(--accent-hover)}
+.btn-save:active{transform:scale(.98)}
+
+.share-modal-card{max-width:520px}
+.share-modal-head{margin-bottom:18px}
+.share-head-sub{margin-top:6px;font-size:12px;color:var(--text-muted)}
+.share-state-card{
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.01));
+  border-radius:var(--r-md);
+  padding:12px 14px;
+  margin-bottom:14px;
+}
+.share-state-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  border:1px solid var(--border);color:var(--text-secondary);
+  background:var(--bg-elevated);border-radius:999px;padding:4px 8px;
+}
+.share-state-pill.is-active{color:#7ee787;border-color:rgba(126,231,135,.4);background:rgba(46,160,67,.12)}
+.share-state-pill.is-loading{color:#f2cc60;border-color:rgba(242,204,96,.45);background:rgba(242,204,96,.1)}
+.share-state-pill.is-disabled{color:#f6b26b;border-color:rgba(246,178,107,.5);background:rgba(246,178,107,.12)}
+.share-state-pill.is-error{color:#f28b82;border-color:rgba(242,139,130,.45);background:rgba(242,139,130,.12)}
+.share-state-title{margin-top:10px;font-size:14px;font-weight:600;color:var(--text-primary)}
+.share-state-desc{margin-top:6px;font-size:12px;color:var(--text-secondary);line-height:1.45}
+.share-url-field{margin-bottom:10px}
+.share-url-row{display:flex;gap:8px;align-items:center}
+.share-url-input{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace}
+.share-inline-copy{flex-shrink:0;min-width:72px;justify-content:center}
+.share-actions-primary{display:flex;gap:8px;align-items:center;margin-top:8px}
+.share-actions-primary .btn-save{margin-top:0;flex:1}
+.share-actions-primary .settings-btn{height:38px;justify-content:center}
+.share-danger-zone{
+  margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.share-danger-copy{font-size:11.5px;color:var(--text-muted);line-height:1.35}
+.share-danger-btn{color:#f28b82;border-color:rgba(242,139,130,.35)}
+.share-danger-btn:hover{background:rgba(242,139,130,.1);color:#ffd3cf}
+.share-error-text{color:#f28b82 !important}
+
+/* ── Toast ───────────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:80px;left:50%;
+  transform:translateX(-50%) translateY(16px);
+  padding:10px 20px;background:var(--bg-elevated);border:1px solid var(--border);
+  border-radius:var(--r-full);font-size:12px;font-weight:500;color:var(--text-primary);
+  box-shadow:var(--shadow-lg);z-index:200;
+  opacity:0;pointer-events:none;transition:all var(--dur-base) var(--ease);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Error ───────────────────────────────────────────────────────── */
+.msg-error{
+  font-size:13px;color:var(--error);background:rgba(248,113,113,.06);
+  border:1px solid rgba(248,113,113,.12);border-radius:var(--r-sm);
+  padding:10px 14px;display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;
+}
+.msg-error .retry-btn{
+  margin-left:auto;font-size:11px;font-weight:600;color:var(--accent-hover);
+  padding:4px 10px;border-radius:var(--r-sm);background:var(--accent-dim);
+  transition:all var(--dur-fast) var(--ease);flex-shrink:0;
+}
+.msg-error .retry-btn:hover{background:var(--accent);color:#fff}
+.msg-error-wrap{display:flex;flex-direction:column;align-items:flex-start;gap:4px;flex:1;min-width:0}
+.msg-error-trace{font-size:10px;color:var(--text-faint);font-family:ui-monospace,Menlo,monospace;word-break:break-all}
+
+.filter-bar{
+  flex-shrink:0;padding:8px 16px;font-size:11px;color:var(--text-secondary);
+  border-bottom:1px solid var(--border-subtle);background:rgba(0,0,0,.03);
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.filter-bar[hidden]{display:none!important}
+.filter-bar-label{color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10px}
+.filter-bar-tags{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+.filter-tag{font-size:11px;padding:4px 8px;border-radius:var(--r-full);border:1px solid var(--border);color:var(--text-secondary);background:var(--bg-elevated)}
+.filter-clear{margin-left:auto;font-size:11px;font-weight:600;color:var(--accent-hover);padding:4px 8px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--border)}
+.filter-clear:hover{border-color:var(--accent);color:var(--text-primary)}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:center}
+.chip-btn{
+  font-size:11px;padding:7px 12px;border-radius:var(--r-full);border:1px solid var(--border);
+  color:var(--text-secondary);background:var(--bg-elevated);transition:all var(--dur-fast) var(--ease);
+}
+.chip-btn:hover{border-color:var(--accent);color:var(--text-primary);background:var(--bg-card)}
+.chip-btn.is-active{border-color:rgba(0,0,0,.28);color:var(--text-primary);background:var(--accent-dim);box-shadow:0 0 0 1px var(--border-subtle)}
+
+.msg-map-stack{display:flex;flex-direction:column;gap:12px;margin-top:12px;max-width:100%}
+.msg-map-card{
+  border-radius:var(--r-md);border:1px solid var(--border-subtle);
+  background:var(--bg-elevated);overflow:hidden;max-width:100%;
+}
+.msg-map-head{padding:10px 12px;border-bottom:1px solid var(--border-subtle)}
+.msg-map-title{font-size:12px;font-weight:600;color:var(--text-primary);letter-spacing:-.02em}
+.msg-map-address{font-size:11px;color:var(--text-secondary);margin-top:4px;line-height:1.45;word-break:break-word}
+.msg-map-iframe-wrap{position:relative;width:100%;aspect-ratio:16/9;background:var(--bg-card);min-height:160px}
+.msg-map-iframe-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.msg-map-actions{display:flex;gap:8px;padding:8px 12px;flex-wrap:wrap;align-items:center}
+.msg-map-fallback{font-size:11px;color:var(--text-muted)}
+
+.onboarding-card{max-width:440px}
+.onboarding-body{font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:14px}
+.onboarding-body ul{margin:8px 0 0 18px}
+.onboarding-body li{margin:6px 0}
+
+/* ── Backdrop ────────────────────────────────────────────────────── */
+.sidebar-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:35;
+  opacity:0;pointer-events:none;transition:opacity var(--dur-base) var(--ease);
+}
+.sidebar-backdrop.show{opacity:1;pointer-events:auto}
+
+/* ── Animations ──────────────────────────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sourceSlide{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes dotBounce{0%,80%,100%{transform:translateY(0);opacity:.3}40%{transform:translateY(-4px);opacity:1}}
+@keyframes blink{50%{opacity:0}}
+@keyframes iconPulse{0%{transform:scale(.95);opacity:.5}100%{transform:scale(1.15);opacity:.8}}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;height:100vh;box-shadow:var(--shadow-lg)}
+  .sidebar.collapsed{transform:translateX(-100%)}
+  .sug-grid{grid-template-columns:1fr}
+  .msg--user .msg-text{max-width:90%}
+  .chat-input-area{padding:0 12px 12px}
+  .chat-inner{padding:16px 14px 8px}
+  .sources-grid:not(.sources-slider-track){grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+  .sources-grid:not(.sources-slider-track){grid-template-columns:1fr}
+}
+@media(min-width:769px) and (max-width:1024px){
+  :root{--sidebar-w:240px}
+}
+</style>
+</head>
+<body>
+<div id="app-root"></div>
+<script src="/static/js/mosty-logo-mark.js?__VER_mosty-logo-mark.js__"></script>
+<script src="/static/js/chat-page-renderer.js?__VER_chat-page-renderer.js__"></script>
+<script>
+const mostyLogoMarkHtml = typeof MOSTY_LOGO_MARK_SVG === 'string' ? MOSTY_LOGO_MARK_SVG : '';
+const elizaAssistantAvatarHtml =
+  '<img src="/static/eliza-avatar.png" alt="" class="msg-ava__img msg-ava__img--ai" loading="lazy" decoding="async" />';
+const INJECTED_API_KEY = '__MOSTY_API_KEY__';
+const CHAT_MODE = '__CHAT_MODE__';
+const SHARED_TOKEN = '__SHARED_TOKEN__';
+const CHAT_HIDE_API_KEY_UI = __CHAT_HIDE_API_KEY_UI__;
+const PRODUCT_HUES = [265, 215, 175, 330, 25, 290, 195, 145];
+const STYLING_FALLBACKS_EL = [
+  'Μια κομψή επιλογή που συνδυάζεται εύκολα με διαφορετικά looks.',
+  'Ιδανική πρόταση για ένα προσεγμένο και σύγχρονο outfit.',
+  'Ένα ευέλικτο κομμάτι που μπορεί να φορεθεί εύκολα σε πολλές εμφανίσεις.',
+  'Καθαρές γραμμές και πολυτέλεια για καθημερινό στυλ.',
+  'Ταιριάζει ιδανικά σε casual και πιο dressy περιστάσεις.',
+];
+function normalizeStyling(val) {
+  if (val == null) return '';
+  const s = String(val).trim();
+  if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return '';
+  return s;
+}
+function stylingFallback(index) {
+  return STYLING_FALLBACKS_EL[index % STYLING_FALLBACKS_EL.length];
+}
+
+function mostyNormalizeLocationPayload(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const label = typeof raw.label === 'string' ? raw.label.trim() : '';
+  const address = typeof raw.address === 'string' ? raw.address.trim() : '';
+  let query = typeof raw.query === 'string' ? raw.query.trim() : '';
+  if (!query) query = address || label;
+  if (!query || query.length < 3) return null;
+  return { label: label || 'Τοποθεσία', address: address || query, query };
+}
+
+function mostyMapsEmbedUrl(query) {
+  const q = String(query || '').slice(0, 500);
+  return 'https://www.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed';
+}
+
+function mostyMapsOpenUrl(query) {
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(query || '').slice(0, 500));
+}
+
+function mostyUserAsksAddressIntent(q) {
+  const s = String(q || '').toLowerCase();
+  return /διεύθυνση|διευθυνση|χάρτη|χαρτη|\bmap\b|πού βρίσκεται|που βρισκεται|τοποθεσία|τοποθεσια|\blocation\b|κατάστημα|καταστημα|καταστήματα|καταστηματα|katastimata|showroom|ωράριο|ωραριο|αποστολή|παραλαβή|δείξε|δειξε|βρες|βρείτε|mosty/.test(s);
+}
+
+/** Lines like "Διεύθυνση: …" / "Address: …" — deterministic store-list parsing (multi-location). */
+function mostyExtractDiethinsiBlocks(text) {
+  const t = String(text || '');
+  const lines = t.split(/\n/).map((l) => l.trim());
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const m = line.match(/^(?:Διεύθυνση|Διευθυνση|Address)\s*:\s*(.+)$/i);
+    if (!m) continue;
+    const addr = m[1].trim();
+    if (addr.length < 8 || addr.length > 220) continue;
+    let label = 'Τοποθεσία';
+    for (let j = i - 1; j >= 0; j--) {
+      const prev = lines[j];
+      if (!prev) continue;
+      if (/^(Τηλέφωνο|Τηλεφωνο|Ωράριο|Ωραριο|Λειτουργεί|Λειτουργει|Διεύθυνση|Διευθυνση|Address|Email)/i.test(prev)) continue;
+      if (prev.length > 2 && prev.length < 96) {
+        label = prev.replace(/^[\s\-•*]+/, '').slice(0, 88);
+        break;
+      }
+    }
+    const loc = mostyNormalizeLocationPayload({ label, address: addr, query: addr });
+    if (loc) out.push(loc);
+  }
+  return out;
+}
+
+function mostyExtractAddressCandidate(text) {
+  const t = String(text || '');
+  const di = mostyExtractDiethinsiBlocks(t);
+  if (di.length) return di[0].query || di[0].address;
+  const lines = t.split(/\n/).map((l) => l.trim()).filter((x) => x.length >= 12 && x.length <= 220);
+  for (const line of lines) {
+    if (/\d{1,5}\s/.test(line) && /[Α-Ωα-ωA-Za-z]{4,}/.test(line)) return line.slice(0, 240);
+    if (/^(Οδός|Οδος|Διεύθυνση|Διευθυνση|Ερμού|Πατησίων|Τ\.Κ\.|ΤΚ)/i.test(line)) return line.slice(0, 240);
+  }
+  const m = t.match(/([Α-Ωα-ω][^\n]{8,120},\s*\d{1,3}[^\n]{0,80})/);
+  if (m) return m[1].trim().slice(0, 240);
+  return null;
+}
+
+async function mostyCopyTextToClipboard(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (_) { /* fall through */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (_) {
+    return false;
+  }
+}
+
+class MostyChat {
+  constructor(schema, options = {}) {
+    this.schema = schema || {};
+    this.mode = options.mode || 'interactive';
+    this.sharedToken = options.sharedToken || '';
+    this.isSharedMode = this.mode === 'shared_interactive' || this.mode === 'shared_readonly';
+    this.isSharedReadonly = this.mode === 'shared_readonly';
+    this.apiKey = '';
+    this.language = 'auto';
+    this.sessionId = null;
+    this.messages = [];
+    this.conversations = [];
+    this.activeConversationId = null;
+    this.isStreaming = false;
+    this._lastAskConversationId = null;
+    this.shareUrl = '';
+    this.shareSessionId = null;
+    this.env = (typeof window !== 'undefined' && window.__MOSTY_BOOTSTRAP__ && window.__MOSTY_BOOTSTRAP__.env)
+      ? window.__MOSTY_BOOTSTRAP__.env
+      : null;
+    this.limits = (typeof window !== 'undefined' && window.__MOSTY_BOOTSTRAP__ && window.__MOSTY_BOOTSTRAP__.limits)
+      ? window.__MOSTY_BOOTSTRAP__.limits
+      : { maxInputChars: 8000 };
+    const feat = (typeof window !== 'undefined' && window.__MOSTY_BOOTSTRAP__ && window.__MOSTY_BOOTSTRAP__.features) || {};
+    this.mapFeatures = {
+      mapPreview: feat.mapPreview !== false,
+      mapsOpenInNewTab: feat.mapsOpenInNewTab !== false,
+    };
+    this._lastUserQuery = '';
+    this.pendingAttachmentIds = [];
+    this._skipDuplicateUserMsg = false;
+    this._draftTimer = null;
+    this.stickyFilters = {};
+    this.clientSessionId = this._initClientSessionId();
+    this.hideApiKeyUi = false;
+
+    this.$ = (s) => document.querySelector(s);
+    this.$$ = (s) => document.querySelectorAll(s);
+
+    if (!this.isSharedMode) this.loadSettings();
+    this.cacheDom();
+    this.applyHideApiKeyUi();
+    this.bindEvents();
+    if (this.isSharedMode) {
+      this.applySharedMode();
+      this.initSharedThread();
+    } else {
+    this.loadConversations();
+    this.renderSidebar();
+      this.showWelcome();
+      this.loadDraft();
+      this.maybeShowOnboarding();
+    }
+  }
+
+  _initClientSessionId() {
+    if (this.isSharedMode) return '__shared__';
+    const KEY = 'mosty_client_session_id_v1';
+    try {
+      let v = localStorage.getItem(KEY);
+      if (v && typeof v === 'string' && v.length >= 8) return v;
+      v = 'sess_' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+      localStorage.setItem(KEY, v);
+      return v;
+    } catch (_) {
+      return 'sess_fallback';
+    }
+  }
+
+  apiPath(key, params) {
+    const fb = {
+      sessionCreate: '/api/v1/chat/session',
+      sessionGet: '/api/v1/chat/session/{sessionId}',
+      ask: '/api/v1/chat/ask',
+      uploadAttachment: '/api/v1/chat/attachments',
+      sessionDelete: '/api/v1/chat/session/{sessionId}',
+      shareStatus: '/api/v1/chat/session/{sessionId}/share',
+      shareCreate: '/api/v1/chat/session/{sessionId}/share',
+      shareDelete: '/api/v1/chat/session/{sessionId}/share',
+      sharedRead: '/api/v1/chat/shared/{token}',
+      sharedAsk: '/api/v1/chat/shared/{token}/ask',
+      conversationsList: '/api/v1/chat/conversations',
+      conversationMessages: '/api/v1/chat/conversations/{sessionId}/messages',
+    };
+    const ep = this.schema.dataSources && this.schema.dataSources.endpoints;
+    let tpl = (ep && ep[key]) || fb[key];
+    if (!tpl) return '';
+    if (params) {
+      Object.keys(params).forEach((k) => {
+        tpl = tpl.replace('{' + k + '}', encodeURIComponent(params[k]));
+      });
+    }
+    return tpl;
+  }
+
+  chatDefaults() {
+    const d = this.schema.dataSources && this.schema.dataSources.defaults;
+    return { top_k: (d && d.top_k != null) ? d.top_k : 10, temperature: (d && d.temperature != null) ? d.temperature : 0.2 };
+  }
+
+  draftKey() {
+    return this.activeConversationId || '__new__';
+  }
+
+  saveDraft() {
+    if (this.isSharedMode) return;
+    try {
+      localStorage.setItem('mosty_composer_draft_' + this.draftKey(), this.dom.chatInput.value);
+    } catch (_) { /* quota */ }
+  }
+
+  loadDraft() {
+    if (this.isSharedMode) return;
+    try {
+      const v = localStorage.getItem('mosty_composer_draft_' + this.draftKey());
+      this.dom.chatInput.value = v || '';
+      this.autoGrow(this.dom.chatInput);
+      this.dom.sendBtn.classList.toggle('active', this.dom.chatInput.value.trim().length > 0);
+    } catch (_) {}
+  }
+
+  clearDraftForKey(key) {
+    try {
+      localStorage.removeItem('mosty_composer_draft_' + key);
+    } catch (_) {}
+  }
+
+  resolveUrl(path) {
+    if (!path || typeof path !== 'string') return path;
+    if (/^https?:\/\//i.test(path)) return path;
+    const env = this.env;
+    if (env && env.origin && path.startsWith('/')) {
+      return env.origin.replace(/\/$/, '') + path;
+    }
+    return path;
+  }
+
+  str(name, fallback) {
+    const s = this.schema.strings || {};
+    const v = s[name];
+    return (v != null && v !== '') ? v : fallback;
+  }
+
+  loadSettings() {
+    const stored = localStorage.getItem('mosty_api_key');
+    if (stored) {
+      this.apiKey = stored;
+    } else if (INJECTED_API_KEY && !INJECTED_API_KEY.startsWith('__')) {
+      this.apiKey = INJECTED_API_KEY;
+      localStorage.setItem('mosty_api_key', this.apiKey);
+    }
+    this.language = localStorage.getItem('mosty_language') || 'auto';
+  }
+
+  saveSettings(key, lang) {
+    this.apiKey = key;
+    this.language = lang;
+    localStorage.setItem('mosty_api_key', key);
+    localStorage.setItem('mosty_language', lang);
+  }
+
+  cacheDom() {
+    this.dom = {
+      sidebar: this.$('#sidebar'),
+      sidebarList: this.$('#sidebarList'),
+      sidebarBackdrop: this.$('#sidebarBackdrop'),
+      sidebarToggle: this.$('#sidebarToggle'),
+      newChatBtn: this.$('#newChatBtn'),
+      chatScroll: this.$('#chatScroll'),
+      chatInner: this.$('#chatInner'),
+      chatInput: this.$('#chatInput'),
+      sendBtn: this.$('#sendBtn'),
+      clearChatBtn: this.$('#clearChatBtn'),
+      settingsBtn: this.$('#settingsBtn'),
+      settingsModal: this.$('#settingsModal'),
+      settingsClose: this.$('#settingsClose'),
+      shareModal: this.$('#shareModal'),
+      shareClose: this.$('#shareClose'),
+      shareCloseSecondaryBtn: this.$('#shareCloseSecondaryBtn'),
+      shareStateCard: this.$('#shareStateCard'),
+      shareStatePill: this.$('#shareStatePill'),
+      shareStateTitle: this.$('#shareStateTitle'),
+      shareStatusText: this.$('#shareStatusText'),
+      shareUrlInput: this.$('#shareUrlInput'),
+      shareReplaceHint: this.$('#shareReplaceHint'),
+      shareErrorText: this.$('#shareErrorText'),
+      createShareBtn: this.$('#createShareBtn'),
+      copyShareBtn: this.$('#copyShareBtn'),
+      revokeShareBtn: this.$('#revokeShareBtn'),
+      apiKeyInput: this.$('#apiKeyInput'),
+      langSelect: this.$('#langSelect'),
+      saveSettingsBtn: this.$('#saveSettingsBtn'),
+      toast: this.$('#toast'),
+      offlineBanner: this.$('#offlineBanner'),
+      stopBtn: this.$('#stopBtn'),
+      attachBtn: this.$('#attachBtn'),
+      attachmentInput: this.$('#attachmentInput'),
+      exportChatBtn: this.$('#exportChatBtn'),
+      filterBar: this.$('#filterBar'),
+      apiKeyFieldWrap: this.$('#apiKeyFieldWrap'),
+      onboardingModal: this.$('#onboardingModal'),
+      onboardingClose: this.$('#onboardingClose'),
+      onboardingDismiss: this.$('#onboardingDismiss'),
+      onboardingBody: this.$('#onboardingBody'),
+      onboardingTitle: this.$('#onboardingTitle'),
+    };
+  }
+
+  applyHideApiKeyUi() {
+    const injected = INJECTED_API_KEY && !INJECTED_API_KEY.startsWith('__');
+    this.hideApiKeyUi = CHAT_HIDE_API_KEY_UI === true || injected;
+    if (this.hideApiKeyUi && this.dom.apiKeyFieldWrap) this.dom.apiKeyFieldWrap.style.display = 'none';
+  }
+
+  mergeFilters(a, b) {
+    const out = { ...(a || {}) };
+    Object.keys(b || {}).forEach((k) => {
+      if (b[k] !== undefined) out[k] = b[k];
+    });
+    return out;
+  }
+
+  buildFiltersPayload() {
+    const f = this.stickyFilters || {};
+    const out = {};
+    const keys = ['category', 'brand', 'min_price', 'max_price', 'language', 'product_type', 'color', 'size', 'occasion', 'style', 'material', 'season', 'fit', 'sale_only', 'new_arrivals_only'];
+    keys.forEach((k) => {
+      if (f[k] === undefined || f[k] === null || f[k] === '') return;
+      out[k] = f[k];
+    });
+    return out;
+  }
+
+  applyQuickFilter(filters) {
+    this.stickyFilters = this.mergeFilters(this.stickyFilters || {}, filters || {});
+    this.updateFilterBar();
+    this.updateWelcomeChipsActive();
+    this.showToast(this.str('filtersApplied', 'Filters applied to the next message'));
+  }
+
+  clearStickyFilters() {
+    const had = Object.keys(this.stickyFilters || {}).length > 0;
+    this.stickyFilters = {};
+    this.updateFilterBar();
+    this.updateWelcomeChipsActive();
+    if (had) this.showToast(this.str('filtersCleared', 'Filters cleared'));
+  }
+
+  updateWelcomeChipsActive() {
+    const row = this.dom.chatInner && this.dom.chatInner.querySelector('#welcomeChipRow');
+    if (!row) return;
+    const cur = JSON.stringify(this.stickyFilters || {});
+    row.querySelectorAll('.chip-btn[data-filters-json]').forEach((btn) => {
+      const j = btn.getAttribute('data-filters-json') || '{}';
+      btn.classList.toggle('is-active', j === cur && cur !== '{}');
+    });
+  }
+
+  updateFilterBar() {
+    const bar = this.dom.filterBar;
+    if (!bar) return;
+    const f = this.stickyFilters || {};
+    const keys = Object.keys(f).filter((k) => f[k] !== undefined && f[k] !== null && f[k] !== '');
+    if (!keys.length) {
+      bar.hidden = true;
+      bar.innerHTML = '';
+      this.updateWelcomeChipsActive();
+      return;
+    }
+    const short = (k, v) => {
+      if (k === 'max_price') return '≤€' + v;
+      if (k === 'min_price') return '≥€' + v;
+      if (k === 'sale_only' && v) return 'Sale';
+      if (k === 'new_arrivals_only' && v) return 'New in';
+      return k + ':' + String(v);
+    };
+    const tags = keys.map((k) => '<span class="filter-tag">' + this.esc(short(k, f[k])) + '</span>').join('');
+    bar.innerHTML = '<span class="filter-bar-label">Filters</span><div class="filter-bar-tags">' + tags + '</div><button type="button" class="filter-clear" id="filterClearBtn">Clear</button>';
+    bar.hidden = false;
+    const cl = this.$('#filterClearBtn');
+    if (cl) cl.addEventListener('click', () => this.clearStickyFilters());
+    this.updateWelcomeChipsActive();
+  }
+
+  maybeShowOnboarding() {
+    if (this.isSharedMode) return;
+    try {
+      const v = localStorage.getItem('mosty_onboarding_seen_v1');
+      if (v === 'true' || v === '1') return;
+    } catch (_) { return; }
+    const ob = this.schema.onboarding;
+    if (!ob || !ob.title || !this.dom.onboardingModal) return;
+    if (this.dom.onboardingTitle) this.dom.onboardingTitle.textContent = ob.title;
+    if (this.dom.onboardingBody && Array.isArray(ob.bullets)) {
+      this.dom.onboardingBody.innerHTML = '<ul>' + ob.bullets.map((b) => '<li>' + this.esc(b) + '</li>').join('') + '</ul>';
+    }
+    if (this.dom.onboardingDismiss && ob.dismissButton) this.dom.onboardingDismiss.textContent = ob.dismissButton;
+    this.dom.onboardingModal.classList.add('open');
+    const focusEl = this.dom.onboardingDismiss || this.dom.onboardingClose;
+    if (focusEl && typeof focusEl.focus === 'function') {
+      setTimeout(() => { try { focusEl.focus(); } catch (_) {} }, 0);
+    }
+  }
+
+  dismissOnboarding() {
+    if (this.dom.onboardingModal) this.dom.onboardingModal.classList.remove('open');
+    try { localStorage.setItem('mosty_onboarding_seen_v1', 'true'); } catch (_) {}
+  }
+
+  buildExportMarkdown() {
+    const lines = ['# Συνομιλία Mosty', ''];
+    if (this.sessionId) lines.push('Session ID: ' + this.sessionId, '');
+    for (const m of this.messages) {
+      lines.push(m.role === 'user' ? '## User' : '## Assistant', '', (m.content || '').trim(), '');
+    }
+    return lines.join('\n');
+  }
+
+  async exportChat() {
+    if (this.isSharedMode) return;
+    if (!this.messages.length) {
+      this.showToast(this.str('exportEmpty', 'Nothing to export yet'));
+      return;
+    }
+    const md = this.buildExportMarkdown();
+    const ok = await mostyCopyTextToClipboard(md);
+    if (ok) this.showToast(this.str('exportCopied', 'Conversation copied to clipboard'));
+    else this.showToast(this.str('exportFailed', 'Could not copy'));
+  }
+
+  async syncConversationsFromServer() {
+    if (this.isSharedMode || !this.apiKey) return;
+    try {
+      const data = await this.api(this.apiPath('conversationsList'));
+      const items = Array.isArray(data.items) ? data.items : [];
+      let changed = false;
+      for (const it of items) {
+        const sid = it.id;
+        if (!sid) continue;
+        const existing = this.conversations.find((c) => c.session_id === sid);
+        if (existing) {
+          if (it.title && (!existing.title || existing.title === 'Conversation')) {
+            existing.title = it.title;
+            changed = true;
+          }
+          continue;
+        }
+        this.conversations.push({
+          id: 'srv_' + sid,
+          session_id: sid,
+          title: it.title || it.last_query || 'Conversation',
+          messages: [],
+          needsFetch: true,
+          created_at: it.created_at || new Date().toISOString(),
+          updated_at: it.updated_at || new Date().toISOString(),
+          shared: false,
+        });
+        changed = true;
+      }
+      if (changed) this.saveConversations();
+      this.renderSidebar();
+    } catch (_) { /* offline or auth */ }
+  }
+
+  async loadConversationMessages(conv) {
+    if (!conv.session_id) return;
+    try {
+      const data = await this.api(this.apiPath('conversationMessages', { sessionId: conv.session_id }));
+      const msgs = Array.isArray(data.messages) ? data.messages : [];
+      conv.messages = msgs.map((m) => {
+        const base = { role: m.role, content: m.content || '', timestamp: m.timestamp || '' };
+        if (m.role === 'assistant') {
+          const parsed = this.decodeAssistantEnvelope(base.content);
+          if (parsed) {
+            return {
+              ...base,
+              content: parsed.content,
+              sources: parsed.sources,
+              products: parsed.products,
+              intent: parsed.intent,
+              location: parsed.location || null,
+            };
+          }
+        }
+        return base;
+      });
+      conv.needsFetch = false;
+      this.saveConversations();
+    } catch (e) {
+      const tid = e && e.traceId;
+      this.showToast(
+        (e.message || this.str('loadMessagesFailed', 'Could not load conversation')) + (tid ? ' · Trace ID: ' + tid : ''),
+      );
+    }
+  }
+
+  applyOfflineState() {
+    const el = this.dom.offlineBanner;
+    if (!el) return;
+    el.hidden = !!navigator.onLine;
+  }
+
+  bindEvents() {
+    if (!this.isSharedReadonly) {
+    this.dom.sendBtn.addEventListener('click', () => this.handleSend());
+    }
+    if (this.dom.attachBtn && this.dom.attachmentInput) {
+      this.dom.attachBtn.addEventListener('click', () => this.dom.attachmentInput.click());
+      this.dom.attachmentInput.addEventListener('change', () => this.handleAttachmentPick());
+    }
+
+    if (!this.isSharedReadonly) {
+    this.dom.chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.handleSend(); }
+    });
+    }
+
+    if (!this.isSharedReadonly) {
+    this.dom.chatInput.addEventListener('input', () => {
+      this.autoGrow(this.dom.chatInput);
+      this.dom.sendBtn.classList.toggle('active', this.dom.chatInput.value.trim().length > 0);
+        clearTimeout(this._draftTimer);
+        this._draftTimer = setTimeout(() => this.saveDraft(), 350);
+      });
+    }
+
+    window.addEventListener('online', () => {
+      this.applyOfflineState();
+      this.showToast(this.str('backOnline', 'Back online'));
+      if (!this.isSharedMode) this.flushOfflineQueue();
+    });
+    window.addEventListener('offline', () => { this.applyOfflineState(); });
+
+    this.dom.sidebarToggle.addEventListener('click', () => this.toggleSidebar());
+    this.dom.sidebarBackdrop.addEventListener('click', () => this.closeSidebar());
+    if (!this.isSharedReadonly) {
+    this.dom.newChatBtn.addEventListener('click', () => this.newChat());
+    this.dom.clearChatBtn.addEventListener('click', () => this.clearChat());
+    }
+
+    if (!this.isSharedMode) {
+    this.dom.settingsBtn.addEventListener('click', () => this.openSettings());
+    this.dom.settingsClose.addEventListener('click', () => this.closeSettings());
+    this.dom.settingsModal.addEventListener('click', (e) => {
+      if (e.target === this.dom.settingsModal) this.closeSettings();
+    });
+      this.dom.shareClose.addEventListener('click', () => this.closeShare());
+      this.dom.shareCloseSecondaryBtn.addEventListener('click', () => this.closeShare());
+      this.dom.shareModal.addEventListener('click', (e) => {
+        if (e.target === this.dom.shareModal) this.closeShare();
+      });
+      this.dom.createShareBtn.addEventListener('click', () => this.createShareLink());
+      this.dom.copyShareBtn.addEventListener('click', () => this.copyShareLink());
+      this.dom.revokeShareBtn.addEventListener('click', () => this.revokeShareLink());
+      if (this.dom.exportChatBtn) this.dom.exportChatBtn.addEventListener('click', () => this.exportChat());
+      if (this.dom.onboardingClose) this.dom.onboardingClose.addEventListener('click', () => this.dismissOnboarding());
+      if (this.dom.onboardingDismiss) this.dom.onboardingDismiss.addEventListener('click', () => this.dismissOnboarding());
+      if (this.dom.onboardingModal) {
+        this.dom.onboardingModal.addEventListener('click', (e) => {
+          if (e.target === this.dom.onboardingModal) this.dismissOnboarding();
+        });
+      }
+    }
+    if (!this.isSharedMode) {
+      const saveToast = (this.schema.settings && this.schema.settings.saveToast) || 'Settings saved';
+    this.dom.saveSettingsBtn.addEventListener('click', () => {
+        const key = this.hideApiKeyUi ? this.apiKey : this.dom.apiKeyInput.value;
+        this.saveSettings(key, this.dom.langSelect.value);
+      this.closeSettings();
+        this.showToast(saveToast);
+    });
+    }
+
+    if (!this.isSharedMode) {
+    this.$$('.sug-card').forEach((c) => {
+      c.addEventListener('click', () => {
+        this.dom.chatInput.value = c.dataset.query;
+        this.dom.sendBtn.classList.add('active');
+        this.handleSend();
+      });
+    });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !this.isSharedMode) {
+        this.closeSettings();
+        this.closeShare();
+        this.dismissOnboarding();
+      }
+    });
+
+    this.applyOfflineState();
+  }
+
+  toggleSidebar() {
+    this.dom.sidebar.classList.toggle('collapsed');
+    const open = !this.dom.sidebar.classList.contains('collapsed');
+    if (window.innerWidth <= 768) this.dom.sidebarBackdrop.classList.toggle('show', open);
+  }
+
+  closeSidebar() {
+    this.dom.sidebar.classList.add('collapsed');
+    this.dom.sidebarBackdrop.classList.remove('show');
+  }
+
+  loadConversations() {
+    if (this.isSharedMode) { this.conversations = []; return; }
+    const key = 'mosty_conversations:' + this.clientSessionId;
+    try { this.conversations = JSON.parse(localStorage.getItem(key) || '[]'); }
+    catch { this.conversations = []; }
+  }
+
+  saveConversations() {
+    if (this.isSharedMode) return;
+    const key = 'mosty_conversations:' + this.clientSessionId;
+    localStorage.setItem(key, JSON.stringify(this.conversations));
+  }
+
+  getActiveConversation() {
+    return this.conversations.find((c) => c.id === this.activeConversationId);
+  }
+
+  renderSidebar() {
+    const list = this.dom.sidebarList;
+    if (!this.conversations.length) {
+      const empty = (this.schema.sidebar && this.schema.sidebar.emptyState) || 'No conversations yet';
+      list.innerHTML = '<div style="padding:32px 14px;text-align:center;font-size:12px;color:var(--text-faint)">' + this.esc(empty) + '</div>';
+      return;
+    }
+    const sorted = this.conversations.slice().sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    list.innerHTML = sorted.map((c) => `
+      <div class="sidebar-item${c.id === this.activeConversationId ? ' active' : ''}" data-id="${c.id}">
+        <span class="item-title">${this.esc(c.title)}${c.shared ? ' · 🔗' : ''}</span>
+        ${this.isSharedMode ? '' : `
+        <button class="item-share" data-share="${c.id}" title="Share">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+        </button>
+        <button class="item-delete" data-delete="${c.id}" title="Delete">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>`}
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.sidebar-item').forEach((el) => {
+      el.addEventListener('click', async (e) => {
+        if (e.target.closest('.item-delete') || e.target.closest('.item-share')) return;
+        await this.switchConversation(el.dataset.id);
+      });
+    });
+    if (!this.isSharedMode) {
+      list.querySelectorAll('.item-share').forEach((btn) => {
+        btn.addEventListener('click', (e) => { e.stopPropagation(); this.openShare(btn.dataset.share); });
+    });
+    list.querySelectorAll('.item-delete').forEach((btn) => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); this.deleteConversation(btn.dataset.delete); });
+    });
+    }
+  }
+
+  async switchConversation(id) {
+    const conv = this.conversations.find((c) => c.id === id);
+    if (!conv) return;
+    this.saveDraft();
+    this.activeConversationId = id;
+    this.sessionId = conv.session_id;
+    if (conv.needsFetch && conv.session_id) {
+      await this.loadConversationMessages(conv);
+    }
+    this.messages = [...conv.messages];
+    this.renderAll();
+    this.renderSidebar();
+    this.loadDraft();
+    if (window.innerWidth <= 768) this.closeSidebar();
+  }
+
+  async deleteConversation(id) {
+    this.clearDraftForKey(id);
+    const conv = this.conversations.find((c) => c.id === id);
+    const sessionIdToDelete = conv && conv.session_id ? conv.session_id : null;
+    if (sessionIdToDelete) {
+      try {
+        await this.api(this.apiPath('sessionDelete', { sessionId: sessionIdToDelete }), { method: 'DELETE' });
+      } catch (_) {
+        // 404 or network error: still remove from local UI so user sees conversation gone
+      }
+    }
+    this.conversations = this.conversations.filter((c) => c.id !== id);
+    this.saveConversations();
+    if (this.activeConversationId === id) {
+      this.activeConversationId = null;
+      this.sessionId = null;
+      this.messages = [];
+      this.showWelcome();
+    }
+    this.renderSidebar();
+  }
+
+  _parseApiErrorBody(b, status) {
+    let msg = `HTTP ${status}`;
+    if (b && b.error === true && typeof b.message === 'string') msg = b.message;
+    else if (b && b.error && typeof b.error === 'object' && b.error.message) msg = b.error.message;
+    else if (typeof b.detail === 'string') msg = b.detail;
+    let traceId = null;
+    let retryAfterMs = null;
+    if (b && b.error && typeof b.error === 'object') {
+      if (b.error.traceId) traceId = b.error.traceId;
+      if (b.error.retryAfterMs != null) retryAfterMs = b.error.retryAfterMs;
+    }
+    if (retryAfterMs == null && b && b.retryAfterMs != null) retryAfterMs = b.retryAfterMs;
+    return { message: msg, traceId, retryAfterMs };
+  }
+
+  _pickErrorMessage(b, status) {
+    return this._parseApiErrorBody(b, status).message;
+  }
+
+  _throwApiErrorFromBody(b, status) {
+    const { message, traceId, retryAfterMs } = this._parseApiErrorBody(b, status);
+    const err = new Error(message);
+    if (traceId) err.traceId = traceId;
+    if (retryAfterMs != null) err.retryAfterMs = retryAfterMs;
+    throw err;
+  }
+
+  enqueueOfflineItem(query) {
+    const key = 'mosty_offline_outbox';
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) { arr = []; }
+    arr.push({
+      query,
+      at: Date.now(),
+      sessionId: this.sessionId,
+      attachmentIds: [...(this.pendingAttachmentIds || [])],
+    });
+    localStorage.setItem(key, JSON.stringify(arr));
+    this.pendingAttachmentIds = [];
+    this.showToast(this.str('queuedOffline', 'Offline — message queued. It will send when you are back online.'));
+  }
+
+  async flushOfflineQueue() {
+    if (!navigator.onLine || this.isSharedMode) return;
+    const key = 'mosty_offline_outbox';
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    let arr;
+    try { arr = JSON.parse(raw); } catch (_) { return; }
+    if (!Array.isArray(arr) || !arr.length) return;
+    localStorage.removeItem(key);
+    for (const item of arr) {
+      this.sessionId = item.sessionId || this.sessionId;
+      this.pendingAttachmentIds = item.attachmentIds || [];
+      this._skipDuplicateUserMsg = true;
+      this.dom.chatInput.value = item.query;
+      await this.handleSend();
+    }
+  }
+
+  async handleAttachmentPick() {
+    const files = this.dom.attachmentInput && this.dom.attachmentInput.files;
+    if (!files || !files.length) return;
+    for (let i = 0; i < files.length; i++) {
+      const fd = new FormData();
+      fd.append('file', files[i]);
+      try {
+        const url = this.resolveUrl(this.apiPath('uploadAttachment'));
+        const h = {};
+        if (this.apiKey) h['x-mosty-api-key'] = this.apiKey;
+        const r = await fetch(url, { method: 'POST', body: fd, headers: h });
+        const b = await r.json();
+        if (!r.ok) this._throwApiErrorFromBody(b, r.status);
+        if (b.attachment_id) this.pendingAttachmentIds.push(b.attachment_id);
+      } catch (e) {
+        const tid = e && e.traceId;
+        this.showToast(
+          (e.message || 'Upload failed') + (tid ? ' · Trace ID: ' + tid : ''),
+        );
+      }
+    }
+    this.dom.attachmentInput.value = '';
+    if (this.pendingAttachmentIds.length) {
+      this.showToast(`${this.pendingAttachmentIds.length} file(s) ready to send`);
+    }
+  }
+
+  async handleSend() {
+    const query = this.dom.chatInput.value.trim();
+    if (!query || this.isStreaming) return;
+
+    const maxC = (this.limits && this.limits.maxInputChars) ? this.limits.maxInputChars : 8000;
+    if (query.length > maxC) {
+      this.showToast(this.str('inputTooLong', 'Message is too long.') + ' (' + maxC + ' max)');
+      return;
+    }
+
+    this.clearDraftForKey(this.draftKey());
+
+    this.dom.chatInput.value = '';
+    this.autoGrow(this.dom.chatInput);
+    this.dom.sendBtn.classList.remove('active');
+    this.hideWelcome();
+
+    if (!this.activeConversationId) {
+      const id = 'c_' + Date.now();
+      this.conversations.unshift({
+        id, session_id: null, title: query.substring(0, 60),
+        shared: false, messages: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      });
+      this.activeConversationId = id;
+      this.messages = [];
+      this.saveConversations();
+      this.renderSidebar();
+    }
+
+    const sendConversationId = this.activeConversationId;
+    this._lastAskConversationId = sendConversationId;
+
+    if (!this._skipDuplicateUserMsg) {
+      this.addUserMsg(query);
+    }
+    this._skipDuplicateUserMsg = false;
+
+    if (this.isSharedMode) {
+      this.showThinking();
+      this.isStreaming = true;
+      try {
+        const def = this.chatDefaults();
+        const res = await this.api(this.apiPath('sharedAsk', { token: this.sharedToken }), {
+          method: 'POST',
+          body: JSON.stringify({
+            query,
+            top_k: def.top_k,
+            temperature: def.temperature,
+            language: this.language === 'auto' ? null : this.language,
+          }),
+        });
+        this.hideThinking();
+        const { answer: displayText, products: displayProducts, location } = this.normalizeChatResponse(res);
+        await this.addAIMsg(displayText, res.sources || [], displayProducts, { intent: res.intent, location });
+      } catch (err) {
+        this.hideThinking();
+        this.addError(err.message || this.str('genericError', 'Something went wrong.'), query, err.traceId);
+      } finally {
+        this.isStreaming = false;
+      }
+      return;
+    }
+
+    if (!navigator.onLine) {
+      this.enqueueOfflineItem(query);
+      return;
+    }
+
+    if (!this.sessionId) {
+      try { await this.createSession(); }
+      catch { this.addError(this.str('sessionError', 'Failed to create session. Check API key in Settings.'), query); return; }
+    }
+
+    this.showThinking();
+    this.isStreaming = true;
+
+    const def = this.chatDefaults();
+    const attachmentIdsSnapshot = [...(this.pendingAttachmentIds || [])];
+    this.pendingAttachmentIds = [];
+
+    try {
+      const body = {
+        session_id: this.sessionId,
+        query,
+        top_k: def.top_k,
+        temperature: def.temperature,
+          language: this.language === 'auto' ? null : this.language,
+        attachment_ids: attachmentIdsSnapshot,
+        filters: this.buildFiltersPayload(),
+      };
+      const res = await this.api(this.apiPath('ask'), {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      if (res.session_id && res.session_id !== this.sessionId) {
+        this.sessionId = res.session_id;
+        const conv = this.getActiveConversation();
+        if (conv) { conv.session_id = res.session_id; this.saveConversations(); }
+      }
+      this.hideThinking();
+      const { answer: displayText, products: displayProducts, location } = this.normalizeChatResponse(res);
+      const currentActiveId = this.activeConversationId;
+      const targetConversationId = sendConversationId;
+      if (currentActiveId === targetConversationId) {
+        await this.addAIMsg(displayText, res.sources || [], displayProducts, {
+          intent: res.intent,
+          location,
+        });
+      } else {
+        const conv = this.conversations.find((c) => c.id === targetConversationId);
+        if (conv) {
+          const safeText = this.sanitizeAssistantBubbleText(displayText);
+          const msg = {
+            role: 'assistant',
+            content: safeText,
+            sources: res.sources || [],
+            products: displayProducts,
+            intent: res.intent,
+            location: location || null,
+            timestamp: new Date().toISOString(),
+          };
+          if (!Array.isArray(conv.messages)) conv.messages = [];
+          conv.messages.push(msg);
+          conv.updated_at = new Date().toISOString();
+          this.saveConversations();
+          this.renderSidebar();
+        }
+      }
+    } catch (err) {
+      this.hideThinking();
+      if (this.activeConversationId === sendConversationId) {
+        this.addError(err.message || this.str('genericError', 'Something went wrong.'), query, err.traceId);
+      } else {
+        this.showToast(err.message || this.str('genericError', 'Something went wrong.'));
+      }
+      this.pendingAttachmentIds = attachmentIdsSnapshot;
+    } finally {
+      this.isStreaming = false;
+    }
+  }
+
+  newChat() {
+    this.saveDraft();
+    this.activeConversationId = null;
+    this.sessionId = null;
+    this.messages = [];
+    this.stickyFilters = {};
+    this.updateFilterBar();
+    this.showWelcome();
+    this.renderSidebar();
+    this.loadDraft();
+    this.dom.chatInput.focus();
+    if (window.innerWidth <= 768) this.closeSidebar();
+  }
+
+  clearChat() {
+    if (this.activeConversationId) this.deleteConversation(this.activeConversationId);
+  }
+
+  async api(path, opts = {}) {
+    const url = this.resolveUrl(path);
+    const h = { 'Content-Type': 'application/json' };
+    if (this.apiKey) h['x-mosty-api-key'] = this.apiKey;
+    if (!this.isSharedMode && this.clientSessionId) {
+      h['x-mosty-anon-session'] = this.clientSessionId;
+    }
+    const doFetch = () => fetch(url, { ...opts, headers: h });
+    let r;
+    try {
+      r = await doFetch();
+    } catch (err) {
+      await new Promise((x) => setTimeout(x, 400));
+      r = await doFetch();
+    }
+    if (!r.ok && (r.status === 502 || r.status === 503 || r.status === 504)) {
+      await new Promise((x) => setTimeout(x, 400));
+      r = await doFetch();
+    }
+    if (!r.ok) {
+      const b = await r.json().catch(() => ({}));
+      const { message, traceId, retryAfterMs } = this._parseApiErrorBody(b, r.status);
+      const err = new Error(message);
+      if (traceId) err.traceId = traceId;
+      if (retryAfterMs != null) err.retryAfterMs = retryAfterMs;
+      throw err;
+    }
+    return r.json();
+  }
+
+  async createSession() {
+    const lang = this.language === 'auto' ? 'auto' : this.language;
+    const base = this.apiPath('sessionCreate');
+    const r = await this.api(base + '?language=' + encodeURIComponent(lang), { method: 'POST' });
+    this.sessionId = r.session.session_id;
+    const conv = this.getActiveConversation();
+    if (conv) { conv.session_id = this.sessionId; this.saveConversations(); }
+  }
+
+  /** Never show raw JSON / code fences / CoT lines in the chat bubble. */
+  sanitizeAssistantBubbleText(text) {
+    if (text == null || typeof text !== 'string') return '';
+    let t = text.trim();
+    if (!t) return '';
+    for (;;) {
+      const m = t.match(/^```[a-zA-Z0-9]*\s*\n?([\s\S]*?)```\s*$/);
+      if (!m) break;
+      t = m[1].trim();
+    }
+    if (t.startsWith('{')) {
+      try {
+        const o = JSON.parse(t);
+        if (o && typeof o === 'object' && typeof o.message === 'string' && o.message.trim()) {
+          t = o.message.trim();
+          if (Array.isArray(o.products) && o.products.length) {
+            /* caller may already have res.products; do not overwrite here */
+          }
+        }
+      } catch (_) { /* keep t */ }
+    }
+    t = t.replace(/```(?:json)?\s*[\s\S]*?```/gi, '').trim();
+    const badStarts = ['the user ', "i'll ", 'i will ', 'i need to ', 'reasoning:', 'thought:', '"message":', "'message':", '"products":'];
+    t = t.split('\n').filter((line) => {
+      const low = line.toLowerCase().trimStart();
+      return !badStarts.some((p) => low.startsWith(p));
+    }).join('\n').trim();
+    if (t.startsWith('{')) {
+      try {
+        const o2 = JSON.parse(t);
+        if (o2 && typeof o2.message === 'string' && o2.message.trim()) return o2.message.trim();
+      } catch (_) {}
+      return '';
+    }
+    return t;
+  }
+
+  normalizeChatResponse(res) {
+    // Prefer structured 'message' field; keep 'answer' for backwards compatibility.
+    let answer = typeof res.message === 'string' && res.message.trim().length
+      ? res.message
+      : res.answer;
+    let products = res.products != null ? res.products : [];
+
+    // Location: NEVER infer from free text here; only accept explicit structured payload.
+    let location = mostyNormalizeLocationPayload(res.location);
+
+    if (typeof answer === 'string' && answer.trim().startsWith('{')) {
+      const parsed = this.decodeAssistantEnvelope(answer);
+      if (parsed) {
+        answer = parsed.content;
+        if (Array.isArray(parsed.products)) products = parsed.products;
+        // Do NOT blindly adopt parsed.location unless backend sets it intentionally.
+        if (!location && parsed.location) location = parsed.location;
+      } else {
+        try {
+          const data = JSON.parse(answer);
+          if (typeof data.message === 'string') answer = data.message;
+          if (Array.isArray(data.products) && data.products.length) products = data.products;
+          const loc = mostyNormalizeLocationPayload(data.location);
+          if (!location && loc) location = loc;
+        } catch (_) { /* keep answer and products as-is */ }
+      }
+    }
+    answer = this.sanitizeAssistantBubbleText(typeof answer === 'string' ? answer : '');
+    return { answer, products, location, intent: res.intent || null };
+  }
+
+  decodeAssistantEnvelope(content) {
+    if (typeof content !== 'string') return null;
+    const s = content.trim();
+    if (!s.startsWith('{')) return null;
+    try {
+      const data = JSON.parse(s);
+      if (!data || typeof data !== 'object') return null;
+      if (data.v === 1) {
+        return {
+          content: typeof data.text === 'string' ? data.text : '',
+          sources: Array.isArray(data.sources) ? data.sources : [],
+          products: Array.isArray(data.products) ? data.products : [],
+          intent: typeof data.intent === 'string' ? data.intent : null,
+          location: mostyNormalizeLocationPayload(data.location),
+        };
+      }
+      if (data.assistant && typeof data.assistant === 'object') {
+        const a = data.assistant;
+        const text = typeof a.text === 'string' ? a.text : '';
+        const loc = mostyNormalizeLocationPayload(a.location);
+        if (!text && !loc) return null;
+        return {
+          content: text,
+          sources: Array.isArray(a.sources) ? a.sources : [],
+          products: Array.isArray(a.products) ? a.products : [],
+          intent: typeof a.intent === 'string' ? a.intent : null,
+          location: loc,
+        };
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  addUserMsg(text) {
+    this._lastUserQuery = text;
+    const msg = { role: 'user', content: text, timestamp: new Date().toISOString() };
+    this.messages.push(msg);
+    this.renderMsg(msg);
+    this.persist();
+    this.scroll();
+  }
+
+  async addAIMsg(text, sources, products, options = {}) {
+    const safeText = this.sanitizeAssistantBubbleText(text);
+    const msg = {
+      role: 'assistant',
+      content: safeText,
+      sources,
+      products,
+      intent: options.intent,
+      location: options.location || null,
+      timestamp: new Date().toISOString(),
+    };
+    this.messages.push(msg);
+    const el = this.renderMsg(msg, true, { prevUserQuery: this._lastUserQuery });
+    this.persist();
+    const textEl = el.querySelector('.msg-text');
+    if (options.skipTypewriter) {
+      textEl.innerHTML = this.md(safeText);
+    } else {
+      await this.typeWriter(textEl, safeText);
+    }
+    if (products?.length) {
+      this.renderProductCards(el, products, msg.intent);
+    } else if (sources?.length) {
+      this.renderSources(el, sources);
+    }
+    this._renderLocationPreview(el, msg, this._lastUserQuery);
+    this.scroll();
+  }
+
+  addError(text, query, traceId) {
+    const div = document.createElement('div');
+    div.className = 'msg';
+    const traceLine = traceId ? `<span class="msg-error-trace">Trace ID: ${this.esc(traceId)}</span>` : '';
+    div.innerHTML = `
+      <div class="msg-ava msg-ava--ai"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+      <div class="msg-body"><div class="msg-error">
+        <div class="msg-error-wrap"><span>${this.esc(text)}</span>${traceLine}</div>
+        ${query ? '<button class="retry-btn" data-retry>Retry</button>' : ''}
+      </div></div>
+    `;
+    this.dom.chatInner.appendChild(div);
+    this.scroll();
+    const rb = div.querySelector('[data-retry]');
+    if (rb) rb.addEventListener('click', () => { div.remove(); this.dom.chatInput.value = query; this.dom.sendBtn.classList.add('active'); this.handleSend(); });
+  }
+
+  renderMsg(msg, skipContent = false, opts = {}) {
+    const div = document.createElement('div');
+    div.className = `msg msg--${msg.role}`;
+
+    if (msg.role === 'user') {
+      div.innerHTML = `
+        <div class="msg-ava msg-ava--user"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="msg-body"><div class="msg-text">${this.esc(msg.content)}</div></div>
+      `;
+    } else {
+      const bubbleText = this.sanitizeAssistantBubbleText(msg.content);
+      const html = skipContent ? '' : this.md(bubbleText);
+      const asst = this.str('assistantLabel', 'ELIZA AI AGENT');
+      const copyT = this.str('copyTitle', 'Copy');
+      div.innerHTML = `
+        <div class="msg-ava msg-ava--ai">${elizaAssistantAvatarHtml}</div>
+        <div class="msg-body">
+          <span class="msg-label">${this.esc(asst)}</span>
+          <div class="msg-text">${html}</div>
+          <div class="msg-actions">
+            <button class="act-btn" title="${this.esc(copyT)}" data-copy><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          </div>
+        </div>
+      `;
+      div.querySelector('[data-copy]').addEventListener('click', (e) => this.copyMsg(e.currentTarget, bubbleText));
+      if (!skipContent) {
+        if (msg.products?.length) this.renderProductCards(div, msg.products, msg.intent);
+        else if (msg.sources?.length) this.renderSources(div, msg.sources);
+        this._renderLocationPreview(div, msg, opts.prevUserQuery);
+      }
+    }
+    this.dom.chatInner.appendChild(div);
+    this.scroll();
+    return div;
+  }
+
+  renderAll() {
+    this.dom.chatInner.innerHTML = '';
+    this.hideWelcome();
+    this.messages.forEach((m, i) => {
+      let prevUserQuery = null;
+      if (m.role === 'assistant') {
+        for (let j = i - 1; j >= 0; j--) {
+          if (this.messages[j].role === 'user') {
+            prevUserQuery = this.messages[j].content;
+            break;
+          }
+        }
+      }
+      this.renderMsg(m, false, { prevUserQuery });
+    });
+  }
+
+  _appendMapCardEl(parent, loc) {
+    const q = (loc.query || loc.address || '').trim();
+    if (!q) return;
+    const embedSrc = mostyMapsEmbedUrl(q);
+    const openHref = mostyMapsOpenUrl(q);
+    const openTab = this.mapFeatures.mapsOpenInNewTab !== false;
+    const openBtn = this.str('mapOpenMaps', 'Άνοιγμα στους Χάρτες');
+    const card = document.createElement('div');
+    card.className = 'msg-map-card';
+    card.innerHTML = `
+      <div class="msg-map-head">
+        <div class="msg-map-title">${this.esc(loc.label || 'Τοποθεσία')}</div>
+        ${loc.address ? `<div class="msg-map-address">${this.esc(loc.address)}</div>` : ''}
+      </div>
+      <div class="msg-map-iframe-wrap">
+        <iframe title="${this.esc(loc.label || 'Map')}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${this.esc(embedSrc)}"></iframe>
+      </div>
+      <div class="msg-map-actions">
+        <a class="filter-clear" href="${this.esc(openHref)}" ${openTab ? 'target="_blank" rel="noopener noreferrer"' : ''}>${this.esc(openBtn)}</a>
+        <span class="msg-map-fallback" hidden data-map-fallback>${this.esc(this.str('mapEmbedFallback', 'If the map does not load, use the link above.'))}</span>
+      </div>
+    `;
+    const iframe = card.querySelector('iframe');
+    const fb = card.querySelector('[data-map-fallback]');
+    if (iframe) {
+      iframe.addEventListener('error', () => {
+        if (fb) fb.hidden = false;
+      });
+    }
+    parent.appendChild(card);
+  }
+
+  _renderLocationPreview(msgEl, msg, prevUserQuery) {
+    if (!this.mapFeatures.mapPreview || msg.role !== 'assistant') return;
+    const allowedIntents = ['location_based_query', 'store_lookup'];
+    if (!msg.intent || !allowedIntents.includes(msg.intent)) return;
+
+    const body = msgEl.querySelector('.msg-body');
+    if (!body || body.querySelector('.msg-map-stack')) return;
+
+    const loc = msg.location;
+    if (!loc) return;
+    const q = (loc.query || loc.address || '').trim();
+    const hasCoords = typeof loc.lat === 'number' && typeof loc.lon === 'number';
+    if (!hasCoords && !q) return;
+
+    const stack = document.createElement('div');
+    stack.className = 'msg-map-stack';
+    this._appendMapCardEl(stack, loc);
+    body.appendChild(stack);
+  }
+
+  renderSources(msgEl, sources) {
+    const body = msgEl.querySelector('.msg-body');
+    const sec = document.createElement('div');
+    sec.className = 'sources';
+    const sl = this.str('sourcesLabel', 'Sources');
+    const prevL = this.str('carouselPrev', 'Previous products');
+    const nextL = this.str('carouselNext', 'Next products');
+    const pagesL = this.str('carouselPages', 'Carousel pages');
+    sec.innerHTML = `
+      <div class="sources-label">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        ${this.esc(sl)}
+      </div>
+      <div class="sources-slider">
+        <button type="button" class="sources-slider-btn sources-slider-prev" aria-label="${this.esc(prevL)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="sources-slider-viewport">
+          <div class="sources-grid sources-slider-track">${sources.map((s, i) => this.productCard(s, i)).join('')}</div>
+        </div>
+        <button type="button" class="sources-slider-btn sources-slider-next" aria-label="${this.esc(nextL)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="sources-dots" role="tablist" aria-label="${this.esc(pagesL)}"></div>
+      </div>
+    `;
+    body.appendChild(sec);
+    this.initSourcesSlider(sec);
+  }
+
+  renderProductCards(msgEl, products, intent) {
+    const isPopular = intent === 'popular_products';
+    const sectionLabel = isPopular ? this.str('popularSection', 'Popular now') : this.str('recommendationsSection', 'Recommendations');
+    const body = msgEl.querySelector('.msg-body');
+    const sec = document.createElement('div');
+    sec.className = 'sources';
+    const prevL = this.str('carouselPrev', 'Previous products');
+    const nextL = this.str('carouselNext', 'Next products');
+    const pagesL = this.str('carouselPages', 'Carousel pages');
+    sec.innerHTML = `
+      <div class="sources-label">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        ${this.esc(sectionLabel)}
+      </div>
+      <div class="sources-slider">
+        <button type="button" class="sources-slider-btn sources-slider-prev" aria-label="${this.esc(prevL)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="sources-slider-viewport">
+          <div class="sources-grid sources-slider-track" style="display:flex;gap:12px;scroll-snap-type:x mandatory;">
+            ${products.map((p, i) => this.visualProductCard(p, i)).join('')}
+          </div>
+        </div>
+        <button type="button" class="sources-slider-btn sources-slider-next" aria-label="${this.esc(nextL)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="sources-dots" role="tablist" aria-label="${this.esc(pagesL)}"></div>
+      </div>
+    `;
+    body.appendChild(sec);
+    this.initSourcesSlider(sec);
+  }
+
+  /** Absolute URL for product image (Magento often returns /media/... or //cdn/...). */
+  resolveProductImageUrl(href) {
+    if (!href || typeof href !== 'string') return null;
+    const u = href.trim();
+    if (!u) return null;
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    if (u.startsWith('//')) return (typeof window !== 'undefined' ? window.location.protocol : 'https:') + u;
+    const env = (typeof window !== 'undefined' && window.__MOSTY_BOOTSTRAP__ && window.__MOSTY_BOOTSTRAP__.env) || {};
+    const base = (env.storePublicOrigin || '').replace(/\/$/, '');
+    if (u.startsWith('/') && base) return base + u;
+    return null;
+  }
+
+  visualProductCard(p, i) {
+    const href = p.url || '#';
+    const priceDisplay = p.price ? `${p.price}` : '';
+    const currency = p.currency || 'EUR';
+    const imgSrc = this.resolveProductImageUrl(p.image);
+    const hasImage = !!imgSrc;
+    const hue = PRODUCT_HUES[i % PRODUCT_HUES.length];
+    const initial = (p.name || '?')[0].toUpperCase();
+
+    const g1 = 18 + (hue % 10);
+    const g2 = 9 + (hue % 6);
+    const imgBlock = hasImage
+      ? `<img src="${this.esc(imgSrc)}" alt="${this.esc(p.name)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=\\'product-img-placeholder\\' style=\\'background:linear-gradient(135deg,hsl(0,0%,${g1}%),hsl(0,0%,${g2}%));color:hsl(0,0%,42%)\\'>${initial}</div>'">`
+      : `<div class="product-img-placeholder" style="background:linear-gradient(135deg,hsl(0,0%,${g1}%),hsl(0,0%,${g2}%));color:hsl(0,0%,42%)">${initial}</div>`;
+
+    const usePopularity = !!(p.popularity_reason || p.badge);
+    const rawStyling = usePopularity ? (p.popularity_reason || '') : (p.styling_reason ?? p.product_styling ?? p.short_reason ?? p.ai_explanation ?? '');
+    const normalizedStyling = normalizeStyling(rawStyling);
+    const finalStyling = normalizedStyling || (usePopularity ? '' : stylingFallback(i));
+    if (typeof console !== 'undefined' && console.debug) {
+      console.debug('[product-card]', { sku: p.sku, name: p.name, usePopularity, raw: rawStyling?.slice(0, 60) || '(empty)', final: finalStyling?.slice(0, 60) });
+    }
+    const stylingHtml = finalStyling ? `<p class="product-styling">${this.esc(finalStyling)}</p>` : '';
+
+    const reasoning = p.reasoning || {};
+    const shortReason = reasoning.short_reason || '';
+    const reasonHtml = shortReason
+      ? `<p class="product-reason">${this.esc(shortReason)}</p>`
+      : '';
+
+    const score = typeof p.score === 'number' ? Math.round(p.score * 100) : null;
+    const scoreHtml = (score != null && !Number.isNaN(score))
+      ? `<div class="product-score-row"><span class="product-score">${score}% match</span></div>`
+      : '';
+
+    const badgeLabel = p.badge ? this.esc(p.badge) : this.esc(p.availability || this.str('inStock', 'In stock'));
+    const badgeClass = p.badge ? 'product-badge product-badge--popular' : 'product-badge';
+
+    return `
+      <a class="product-card" href="${href}" target="_blank" rel="noopener" style="flex:0 0 calc(33.333% - 16px);max-width:calc(33.333% - 16px);scroll-snap-align:start;">
+        <div class="product-img-wrap">
+          ${imgBlock}
+          <span class="${badgeClass}">${badgeLabel}</span>
+        </div>
+        <div class="product-info">
+          <h4>${this.esc(p.name)}</h4>
+          ${scoreHtml}
+          ${priceDisplay ? `<div class="product-price-row"><span class="product-price">${priceDisplay}</span><span class="product-currency">${currency}</span></div>` : ''}
+          ${stylingHtml}
+          ${reasonHtml}
+        </div>
+        <div class="product-cta">
+          <span>${this.esc(this.str('viewProduct', 'View Product'))}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </div>
+      </a>
+    `;
+  }
+
+  initSourcesSlider(sourcesEl) {
+    const slider = sourcesEl.querySelector('.sources-slider');
+    if (!slider) return;
+    const viewport = slider.querySelector('.sources-slider-viewport');
+    const track = slider.querySelector('.sources-slider-track');
+    const prevBtn = slider.querySelector('.sources-slider-prev');
+    const nextBtn = slider.querySelector('.sources-slider-next');
+    const dotsEl = slider.querySelector('.sources-dots');
+    if (!viewport || !track || !prevBtn || !nextBtn) return;
+
+    function updateState() {
+      const scrollLeft = track.scrollLeft;
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      prevBtn.disabled = maxScroll <= 0 || scrollLeft <= 1;
+      nextBtn.disabled = maxScroll <= 0 || scrollLeft >= maxScroll - 1;
+      const dots = dotsEl.querySelectorAll('.sources-dot');
+      if (dots.length) {
+        const pageIndex = maxScroll <= 0 ? 0 : Math.round(scrollLeft / track.clientWidth);
+        dots.forEach((d, i) => {
+          const active = i === Math.min(pageIndex, dots.length - 1);
+          d.classList.toggle('active', active);
+          d.setAttribute('aria-selected', active);
+        });
+      }
+    }
+
+    function buildDots() {
+      dotsEl.innerHTML = '';
+      const viewportW = viewport.clientWidth;
+      const scrollW = track.scrollWidth;
+      if (viewportW <= 0 || scrollW <= viewportW) return;
+      const pageCount = Math.ceil(scrollW / viewportW);
+      for (let i = 0; i < pageCount; i++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sources-dot' + (i === 0 ? ' active' : '');
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-label', `Page ${i + 1} of ${pageCount}`);
+        btn.setAttribute('aria-selected', i === 0);
+        btn.addEventListener('click', () => {
+          const scrollTo = Math.min(i * viewportW, scrollW - viewportW);
+          track.scrollTo({ left: scrollTo, behavior: 'smooth' });
+        });
+        dotsEl.appendChild(btn);
+      }
+    }
+
+    prevBtn.addEventListener('click', () => {
+      track.scrollBy({ left: -(track.clientWidth + 8), behavior: 'smooth' });
+    });
+    nextBtn.addEventListener('click', () => {
+      track.scrollBy({ left: track.clientWidth + 8, behavior: 'smooth' });
+    });
+    track.addEventListener('scroll', () => { requestAnimationFrame(updateState); });
+    window.addEventListener('resize', () => { requestAnimationFrame(updateState); });
+
+    requestAnimationFrame(() => {
+      updateState();
+      buildDots();
+      updateState();
+    });
+  }
+
+  productCard(s, i) {
+    const hue = PRODUCT_HUES[i % PRODUCT_HUES.length];
+    const initial = (s.name || '?')[0].toUpperCase();
+    const score = Math.round((s.score || 0) * 100);
+    const href = s.url || '#';
+    return `
+      <a class="product-card" href="${href}" target="_blank" rel="noopener" style="flex-direction:row;gap:12px;padding:12px 14px">
+        <div style="width:48px;height:48px;border-radius:var(--r-sm);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;background:linear-gradient(135deg,hsl(0,0%,${22 + (hue % 8)}%),hsl(0,0%,${11 + (hue % 5)}%));color:hsl(0,0%,48%)">
+          <span>${this.esc(initial)}</span>
+        </div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <h4 style="font-size:12.5px;font-weight:500;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this.esc(s.name)}</h4>
+          <span style="font-size:10.5px;color:var(--text-faint);font-weight:500">${this.esc(s.sku)}</span>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+            ${score ? `<span class="product-score">${score}%</span>` : ''}
+            <span style="font-size:11px;color:var(--text-faint);margin-left:auto">View &nearr;</span>
+          </div>
+        </div>
+      </a>
+    `;
+  }
+
+  showThinking() {
+    this.dom.chatInner.querySelector('.thinking')?.remove();
+    const div = document.createElement('div');
+    div.className = 'thinking';
+    const think = this.str('thinking', 'Thinking...');
+    div.innerHTML = `
+      <div class="msg-ava msg-ava--ai">${elizaAssistantAvatarHtml}</div>
+      <div class="thinking-body">
+        <div class="thinking-dots"><span class="thinking-dot"></span><span class="thinking-dot"></span><span class="thinking-dot"></span></div>
+        <span class="thinking-label">${this.esc(think)}</span>
+      </div>
+    `;
+    this.dom.chatInner.appendChild(div);
+    this.scroll();
+  }
+
+  hideThinking() { this.dom.chatInner.querySelector('.thinking')?.remove(); }
+
+  async typeWriter(el, markdown) {
+    const words = markdown.split(/(\s+)/);
+    let buf = '';
+    for (let i = 0; i < words.length; i++) {
+      buf += words[i];
+      if (i % 2 === 0) {
+        el.innerHTML = this.md(buf) + '<span class="msg-cursor"></span>';
+        this.scroll();
+        const w = words[i];
+        let d = 14 + Math.random() * 12;
+        if (/[.!;]$/.test(w)) d = 50 + Math.random() * 40;
+        else if (/[,:]$/.test(w)) d = 25 + Math.random() * 20;
+        await this.sleep(d);
+      }
+    }
+    el.innerHTML = this.md(markdown);
+  }
+
+  md(text) {
+    if (!text) return '';
+    try {
+      return DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), {
+        ADD_ATTR: ['target'],
+        ALLOWED_TAGS: ['p','br','strong','em','del','ul','ol','li','a','code','pre','h1','h2','h3','h4','h5','h6','blockquote','table','thead','tbody','tr','th','td','hr','img','span','div','sup','sub'],
+      });
+    } catch { return this.esc(text); }
+  }
+
+  persist() {
+    if (this.isSharedMode) return;
+    const conv = this.getActiveConversation();
+    if (!conv) return;
+    conv.messages = [...this.messages];
+    conv.updated_at = new Date().toISOString();
+    if (this.messages.length === 1 && this.messages[0].role === 'user') conv.title = this.messages[0].content.substring(0, 60);
+    this.saveConversations();
+    this.renderSidebar();
+  }
+
+  showWelcome() {
+    if (this.isSharedMode) {
+      this.dom.chatInner.innerHTML = '';
+      return;
+    }
+    const wel = this.schema.welcome || {};
+    const title = wel.title || 'ELIZA AI AGENT';
+    const sub = wel.subtitle || '';
+    const suggestions = Array.isArray(wel.suggestions) ? wel.suggestions : [];
+    const sugHtml = suggestions.map((s) => `
+      <button class="sug-card" data-query="${this.esc(s.query || '')}">
+        <span class="sug-title">${this.esc(s.title || '')}</span>
+        <span class="sug-sub">${this.esc(s.subtitle || '')}</span>
+      </button>
+    `).join('');
+    this.dom.chatInner.innerHTML = '';
+    const w = document.createElement('div');
+    w.className = 'welcome';
+    w.id = 'welcomeScreen';
+    w.innerHTML = `
+      <div class="welcome-glow"><div class="icon-circle">${elizaAssistantAvatarHtml}</div></div>
+      <h2>${this.esc(title)}</h2>
+      <p>${this.esc(sub)}</p>
+      <div class="sug-grid">${sugHtml}</div>
+      <div class="chip-row" id="welcomeChipRow"></div>
+    `;
+    this.dom.chatInner.appendChild(w);
+    w.querySelectorAll('.sug-card').forEach((c) => {
+      c.addEventListener('click', () => { this.dom.chatInput.value = c.dataset.query; this.dom.sendBtn.classList.add('active'); this.handleSend(); });
+    });
+    const chipRow = w.querySelector('#welcomeChipRow');
+    const qf = Array.isArray(wel.quickFilters) ? wel.quickFilters : [];
+    if (chipRow) {
+      qf.forEach((c) => {
+        const btn = document.createElement('button');
+        btn.className = 'chip-btn';
+        btn.type = 'button';
+        btn.textContent = c.label || '';
+        const fj = JSON.stringify(c.filters || {});
+        btn.setAttribute('data-filters-json', fj);
+        btn.addEventListener('click', () => this.applyQuickFilter(c.filters || {}));
+        chipRow.appendChild(btn);
+      });
+    }
+    this.updateWelcomeChipsActive();
+  }
+
+  hideWelcome() { this.dom.chatInner.querySelector('.welcome')?.remove(); }
+
+  applySharedMode() {
+    document.body.classList.add('mode-shared');
+    if (this.isSharedReadonly) {
+      document.body.classList.add('mode-shared-readonly');
+      this.dom.chatInput.setAttribute('disabled', 'disabled');
+      this.dom.sendBtn.setAttribute('disabled', 'disabled');
+    } else {
+      this.dom.chatInput.removeAttribute('disabled');
+      this.dom.sendBtn.removeAttribute('disabled');
+    }
+  }
+
+  renderSharedBanner() {
+    const existing = this.dom.chatInner.querySelector('.shared-banner');
+    if (existing) existing.remove();
+    const banner = document.createElement('div');
+    banner.className = 'shared-banner';
+    banner.innerHTML = this.isSharedReadonly
+      ? '<strong>Shared conversation</strong><span>&middot; Read-only view &middot; Anyone with this link can view this conversation</span>'
+      : '<strong>Shared conversation</strong><span>&middot; Live shared thread &middot; Messages continue in this same conversation</span>';
+    this.dom.chatInner.prepend(banner);
+  }
+
+  async initSharedThread() {
+    if (!this.sharedToken || this.sharedToken.startsWith('__')) {
+      this.dom.chatInner.innerHTML = '<div class="shared-banner">This shared conversation is unavailable.</div>';
+      return;
+    }
+    this.dom.chatInner.innerHTML = '';
+    this.renderSharedBanner();
+    try {
+      const data = await this.api(this.apiPath('sharedRead', { token: this.sharedToken }));
+      const conv = data.conversation || {};
+      const msgs = Array.isArray(conv.messages) ? conv.messages : [];
+      const title = conv.title || 'Shared conversation';
+      const h = this.$('.header-center h1');
+      if (h) h.textContent = title;
+      this.conversations = [{
+        id: 'shared',
+        session_id: null,
+        title,
+        shared: true,
+        messages: msgs,
+        created_at: conv.created_at || new Date().toISOString(),
+        updated_at: conv.updated_at || new Date().toISOString(),
+      }];
+      this.activeConversationId = 'shared';
+      this.messages = msgs.map((m) => ({
+        role: m.role,
+        content: m.content || '',
+        timestamp: m.timestamp || '',
+        sources: Array.isArray(m.sources) ? m.sources : [],
+        products: Array.isArray(m.products) ? m.products : [],
+        intent: m.intent || null,
+      }));
+      this.renderSidebar();
+      this.renderAll();
+      this.renderSharedBanner();
+    } catch (_) {
+      this.dom.chatInner.innerHTML = '<div class="shared-banner">This shared conversation is no longer available.</div>';
+      if (!this.isSharedReadonly) {
+        this.dom.chatInput.setAttribute('disabled', 'disabled');
+        this.dom.sendBtn.setAttribute('disabled', 'disabled');
+      }
+    }
+  }
+
+  async bootstrapFromUrlSession() {
+    if (this.isSharedMode) return;
+    const params = new URLSearchParams(window.location.search);
+    const urlSessionId = params.get('session_id');
+    if (!urlSessionId) return;
+    try {
+      const data = await this.api(this.apiPath('sessionGet', { sessionId: urlSessionId }));
+      const sess = data.session || {};
+      const history = Array.isArray(sess.conversation_history) ? sess.conversation_history : [];
+      const imported = history.map((m) => {
+        const base = { role: m.role, content: m.content || '', timestamp: m.timestamp || '' };
+        if (m.role === 'assistant') {
+          const parsed = this.decodeAssistantEnvelope(base.content);
+          if (parsed) {
+            return {
+              ...base,
+              content: parsed.content,
+              sources: parsed.sources,
+              products: parsed.products,
+              intent: parsed.intent,
+              location: parsed.location || null,
+            };
+          }
+        }
+        return base;
+      });
+      let conv = this.conversations.find((c) => c.session_id === urlSessionId);
+      if (!conv) {
+        conv = {
+          id: 'c_' + Date.now(),
+          session_id: urlSessionId,
+          title: (history.find((m) => m.role === 'user')?.content || 'Shared continuation').slice(0, 60),
+          shared: false,
+          messages: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        this.conversations.unshift(conv);
+      }
+      conv.messages = imported;
+      conv.updated_at = new Date().toISOString();
+      this.activeConversationId = conv.id;
+      this.sessionId = urlSessionId;
+      this.messages = imported;
+      this.saveConversations();
+      this.renderSidebar();
+      this.renderAll();
+      if (params.get('continued_from_shared') === '1') {
+        this.showToast('You are continuing a shared conversation');
+      }
+      this.hideWelcome();
+    } catch (_) {
+      this.showToast('Failed to load session from URL');
+    }
+  }
+
+  scroll() { requestAnimationFrame(() => { this.dom.chatScroll.scrollTop = this.dom.chatScroll.scrollHeight; }); }
+
+  autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 150) + 'px'; }
+
+  async copyMsg(btn, text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+      }, 2000);
+    } catch { this.showToast(this.str('failedCopy', 'Failed to copy')); }
+  }
+
+  async openShare(conversationId) {
+    const conv = this.conversations.find((c) => c.id === conversationId);
+    if (!conv || !conv.session_id) {
+      this.showToast('Send at least one message before sharing.');
+      return;
+    }
+    this.shareSessionId = conv.session_id;
+    this.shareUrl = '';
+    this.renderShareModalState({
+      state: 'loading',
+      title: 'Checking sharing status',
+      desc: 'Please wait while we check whether this conversation is already shared.',
+      url: '',
+    });
+    this.dom.shareModal.classList.add('open');
+    try {
+      const status = await this.api(this.apiPath('shareStatus', { sessionId: conv.session_id }));
+      if (status.is_shared) {
+        conv.shared = true;
+        this.renderShareModalState({
+          state: 'active',
+          title: 'Sharing is active',
+          desc: this.shareUrl
+            ? 'This link is live. Anyone with it can open this conversation.'
+            : 'A shared link is active. Create a new link to get a copyable URL.',
+          url: this.shareUrl || '',
+        });
+      } else {
+        conv.shared = false;
+        this.renderShareModalState({
+          state: 'idle',
+          title: 'This conversation is private',
+          desc: 'Create a public link to share this conversation.',
+          url: '',
+        });
+      }
+      this.renderSidebar();
+    } catch (e) {
+      this.renderShareModalState({
+        state: 'error',
+        title: 'Unable to load sharing status',
+        desc: 'Try again in a moment.',
+        error: e.message || 'Unexpected error',
+        url: '',
+      });
+    }
+  }
+
+  closeShare() {
+    this.dom.shareModal.classList.remove('open');
+  }
+
+  renderShareModalState({ state, title, desc, url, error, copied } = {}) {
+    const pill = this.dom.shareStatePill;
+    pill.classList.remove('is-active', 'is-loading', 'is-disabled', 'is-error');
+    const setPill = (label, cls) => {
+      pill.textContent = label;
+      if (cls) pill.classList.add(cls);
+    };
+    if (state === 'loading') setPill('Loading', 'is-loading');
+    else if (state === 'active') setPill('Sharing active', 'is-active');
+    else if (state === 'disabled') setPill('Sharing disabled', 'is-disabled');
+    else if (state === 'error') setPill('Error', 'is-error');
+    else setPill('Not shared', '');
+
+    this.dom.shareStateTitle.textContent = title || '';
+    this.dom.shareStatusText.textContent = desc || '';
+    this.dom.shareUrlInput.value = url || '';
+    this.dom.shareUrlInput.placeholder = url ? '' : 'No active link yet';
+    this.dom.shareErrorText.style.display = error ? 'block' : 'none';
+    this.dom.shareErrorText.textContent = error || '';
+    this.dom.shareReplaceHint.style.display = (state === 'active' || state === 'loading') ? 'block' : 'none';
+
+    const loading = state === 'loading' || state === 'creating' || state === 'regenerating' || state === 'disabling';
+    this.dom.copyShareBtn.disabled = loading || !url;
+    this.dom.revokeShareBtn.disabled = loading || state !== 'active';
+    this.dom.createShareBtn.disabled = loading;
+
+    if (state === 'active') {
+      this.dom.createShareBtn.textContent = 'Create new link';
+    } else if (state === 'loading') {
+      this.dom.createShareBtn.textContent = 'Please wait...';
+    } else if (state === 'disabling') {
+      this.dom.createShareBtn.textContent = 'Updating...';
+    } else if (state === 'error') {
+      this.dom.createShareBtn.textContent = 'Try again';
+    } else {
+      this.dom.createShareBtn.textContent = 'Create link';
+    }
+    this.dom.copyShareBtn.textContent = copied ? 'Copied' : 'Copy';
+  }
+
+  async createShareLink() {
+    if (!this.shareSessionId) return;
+    const hasExisting = !!this.shareUrl;
+    this.renderShareModalState({
+      state: hasExisting ? 'regenerating' : 'creating',
+      title: hasExisting ? 'Replacing active link' : 'Creating share link',
+      desc: hasExisting
+        ? 'A new link is being created. The previous link will stop working.'
+        : 'Generating a public link for this conversation.',
+      url: this.shareUrl || '',
+    });
+    try {
+      const res = await this.api(this.apiPath('shareCreate', { sessionId: this.shareSessionId }), {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      this.shareUrl = res.share_url || '';
+      this.renderShareModalState({
+        state: 'active',
+        title: 'Sharing is active',
+        desc: 'Anyone with this link can open this conversation.',
+        url: this.shareUrl,
+      });
+      const conv = this.conversations.find((c) => c.session_id === this.shareSessionId);
+      if (conv) conv.shared = true;
+      this.renderSidebar();
+      this.showToast('Share link is ready');
+    } catch (e) {
+      this.renderShareModalState({
+        state: 'error',
+        title: 'Could not create link',
+        desc: 'Please try again.',
+        error: e.message || 'Unexpected error',
+        url: this.shareUrl || '',
+      });
+    }
+  }
+
+  async copyShareLink() {
+    if (!this.shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(this.shareUrl);
+      this.renderShareModalState({
+        state: 'active',
+        title: 'Sharing is active',
+        desc: 'Anyone with this link can open this conversation.',
+        url: this.shareUrl,
+        copied: true,
+      });
+      setTimeout(() => {
+        this.renderShareModalState({
+          state: 'active',
+          title: 'Sharing is active',
+          desc: 'Anyone with this link can open this conversation.',
+          url: this.shareUrl,
+        });
+      }, 1400);
+      this.showToast('Link copied');
+    } catch (e) {
+      this.renderShareModalState({
+        state: 'error',
+        title: 'Copy failed',
+        desc: 'You can still copy the link manually.',
+        error: e.message || 'Clipboard access was blocked',
+        url: this.shareUrl,
+      });
+      this.showToast('Failed to copy link');
+    }
+  }
+
+  async revokeShareLink() {
+    if (!this.shareSessionId) return;
+    this.renderShareModalState({
+      state: 'disabling',
+      title: 'Disabling sharing',
+      desc: 'The current link will stop working immediately.',
+      url: this.shareUrl || '',
+    });
+    try {
+      await this.api(this.apiPath('shareDelete', { sessionId: this.shareSessionId }), { method: 'DELETE' });
+      this.shareUrl = '';
+      this.renderShareModalState({
+        state: 'disabled',
+        title: 'Sharing is disabled',
+        desc: 'This conversation is private again. You can create a new link anytime.',
+        url: '',
+      });
+      const conv = this.conversations.find((c) => c.session_id === this.shareSessionId);
+      if (conv) conv.shared = false;
+      this.renderSidebar();
+      this.showToast('Sharing disabled');
+    } catch (e) {
+      this.renderShareModalState({
+        state: 'error',
+        title: 'Could not disable sharing',
+        desc: 'Please try again.',
+        error: e.message || 'Unexpected error',
+        url: this.shareUrl || '',
+      });
+    }
+  }
+
+  openSettings() { this.dom.apiKeyInput.value = this.apiKey; this.dom.langSelect.value = this.language; this.dom.settingsModal.classList.add('open'); }
+  closeSettings() { this.dom.settingsModal.classList.remove('open'); }
+
+  showToast(t) { this.dom.toast.textContent = t; this.dom.toast.classList.add('show'); setTimeout(() => this.dom.toast.classList.remove('show'), 2500); }
+
+  esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const root = document.getElementById('app-root');
+  let schema;
+  try {
+    schema = await renderChatPage(root, {});
+  } catch (e) {
+    console.error(e);
+    schema = null;
+    if (root) root.innerHTML = '<p style="padding:24px;color:#000;font-family:system-ui">Failed to load chat UI schema.</p>';
+    return;
+  }
+  const mode = CHAT_MODE && !CHAT_MODE.startsWith('__') ? CHAT_MODE : 'interactive';
+  const sharedToken = SHARED_TOKEN && !SHARED_TOKEN.startsWith('__') ? SHARED_TOKEN : '';
+  window.mostyChat = new MostyChat(schema, { mode, sharedToken });
+  if (mode === 'interactive') {
+    await window.mostyChat.bootstrapFromUrlSession();
+    if (navigator.onLine) await window.mostyChat.flushOfflineQueue();
+  }
+  const sb = document.getElementById('sidebar');
+  if (sb && window.innerWidth <= 768) sb.classList.add('collapsed');
+});
+</script>
+</body>
+</html>

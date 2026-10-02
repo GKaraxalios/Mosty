@@ -1,0 +1,68 @@
+# ═══════════════════════════════════════════════════════════════════
+# MostyAPI .gitignore
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Secrets & credentials ─────────────────────────────────────────
+.env
+.env.local
+.env.production
+*.pem
+*.key
+*-sa-key.json
+*-credentials.json
+*service-account*.json
+credentials/
+
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# ── Testing / tooling ────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.cover
+
+# ── Runtime / data ────────────────────────────────────────────────
+data/chunk_store.json
+data/sync_state.json
+data/.index_sync.lock
+*.log
+*.pid
+.uvicorn.pid
+uvicorn.log
+
+# ── IDE / OS ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── Archives / temp ──────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.bak
+
+# ── GCloud deploy ────────────────────────────────────────────────
+.env.gcloud
+
+# ── Keep example / template files ─────────────────────────────────
+!.env.example
+!.env.gcloud.example
+
+# Rotated logs
+*.log.*
