@@ -12,6 +12,14 @@
 *-credentials.json
 *service-account*.json
 credentials/
+.env.*
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+*.sqlite
+*.db
 
 # ── Python ────────────────────────────────────────────────────────
 __pycache__/
