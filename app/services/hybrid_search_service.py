@@ -10,9 +10,15 @@ from app.models.schemas import (
     RAGChunk,
     RAGSearchResult,
 )
+from app.services import es_hybrid
 from app.services.cache_service import CacheService, NS_RAG_SEARCH
 from app.services.rag_ingestion_service import get_chunk_store
-from app.services.vertex_service import VertexEmbeddingService, VertexVectorSearchService
+from app.services.vertex_service import (
+    VectorSearchUnavailable,
+    VertexEmbeddingService,
+    VertexVectorSearchService,
+    classify_vertex_error,
+)
 from app.utils.commerce_semantics import (
     category_matches_filter,
     haystack_matches_color,
@@ -178,12 +184,46 @@ class HybridSearchService:
             )
             return []
 
-        # 2. Dense retrieval — fetch more candidates for reranking
+        # 1b. ES hybrid (Elasticsearch BM25 + NumPy shards + RRF), when enabled.
+        # Any failure (ES down, etc.) falls through to the legacy Vertex + in-memory BM25 path.
+        if es_hybrid.enabled():
+            try:
+                es_results, es_mode = await self._search_es_hybrid(
+                    query, top_k, eligible, len(chunk_store)
+                )
+                if es_mode == "es_hybrid":  # don't cache keyword-only degradation
+                    self._cache.set_hashed(
+                        NS_RAG_SEARCH, cache_key, es_results,
+                        ttl=self._settings.CACHE_RAG_SEARCH_TTL,
+                    )
+                return es_results
+            except Exception:
+                logger.exception("es_hybrid search failed; falling back to legacy hybrid path")
+
+        # 2. Dense retrieval — fetch more candidates for reranking.
+        # If Vertex (embeddings or Vector Search) is unavailable, continue with BM25 over
+        # the same Magento-sourced chunk store; results are flagged as lexical_fallback.
         fetch_n = max(top_k * 3, self._settings.RERANK_TOP_N)
-        query_embedding = await self._embedder.embed_query(query)
-        neighbors = await self._vector_store.find_neighbors(
-            query_embedding, top_k=fetch_n
-        )
+        retrieval_mode = "hybrid"
+        try:
+            query_embedding = await self._embedder.embed_query(query)
+            neighbors = await self._vector_store.find_neighbors(
+                query_embedding, top_k=fetch_n
+            )
+        except Exception as exc:
+            if not isinstance(exc, VectorSearchUnavailable):
+                exc = VectorSearchUnavailable(
+                    classify_vertex_error(exc), str(exc), dependency="vertex_embedding"
+                )
+            retrieval_mode = "lexical_fallback"
+            neighbors = []
+            logger.warning(
+                "fallback.activated dependency=%s category=%s mode=bm25_chunk_store eligible_n=%d",
+                exc.dependency,
+                exc.category,
+                len(eligible),
+            )
+            dense_weight, sparse_weight = 0.0, 1.0
 
         dense_raw: dict[str, float] = {}
         for n in neighbors:
@@ -219,7 +259,8 @@ class HybridSearchService:
             results.append(
                 RAGSearchResult(
                     score=round(final_score, 4),
-                    dense_score=round(d_score, 4),
+                    # No dense score was computed in fallback mode; don't report one.
+                    dense_score=round(d_score, 4) if retrieval_mode == "hybrid" else None,
                     sparse_score=round(s_score, 4),
                     sku=chunk.sku,
                     name=chunk.name,
@@ -232,6 +273,7 @@ class HybridSearchService:
                         "source": chunk.source,
                         "stock_status": chunk.stock_status,
                         "image_url": chunk.image_url,
+                        "retrieval_mode": retrieval_mode,
                     },
                 )
             )
@@ -245,11 +287,60 @@ class HybridSearchService:
                 filters.model_dump(exclude_none=True),
             )
 
-        self._cache.set_hashed(
-            NS_RAG_SEARCH,
-            cache_key,
-            results,
-            ttl=self._settings.CACHE_RAG_SEARCH_TTL,
-        )
+        # Don't cache degraded results, so the hybrid path is used as soon as Vertex recovers.
+        if retrieval_mode == "hybrid":
+            self._cache.set_hashed(
+                NS_RAG_SEARCH,
+                cache_key,
+                results,
+                ttl=self._settings.CACHE_RAG_SEARCH_TTL,
+            )
 
         return results
+
+    async def _search_es_hybrid(
+        self,
+        query: str,
+        top_k: int,
+        eligible: dict[str, RAGChunk],
+        total_chunks: int,
+    ) -> tuple[list[RAGSearchResult], str]:
+        out = await es_hybrid.search(
+            query,
+            top_k=top_k,
+            eligible_ids=set(eligible.keys()),
+            total_chunks=total_chunks,
+        )
+        mode = "es_hybrid" if not out.get("degraded") else "es_keyword_only"
+        if out.get("degraded"):
+            logger.warning("es_hybrid degraded: %s", out["degraded"])
+
+        results: list[RAGSearchResult] = []
+        for row in out["results"]:
+            chunk = eligible.get(str(row.get("chunk_id")))  # also applies metadata filters
+            if not chunk:
+                continue
+            results.append(
+                RAGSearchResult(
+                    score=round(row.get("fusion_score_norm", 0.0), 4),
+                    dense_score=None,   # RRF fuses ranks; per-leg scores are not exposed by the kit
+                    sparse_score=None,
+                    sku=chunk.sku,
+                    name=chunk.name,
+                    chunk_text=chunk.text,
+                    url=chunk.url,
+                    metadata={
+                        "categories": chunk.categories,
+                        "price": chunk.price,
+                        "updated_at": chunk.updated_at,
+                        "source": chunk.source,
+                        "stock_status": chunk.stock_status,
+                        "image_url": chunk.image_url,
+                        "retrieval_mode": mode,
+                        "match_source": row.get("__src"),
+                    },
+                )
+            )
+            if len(results) >= top_k:
+                break
+        return results, mode

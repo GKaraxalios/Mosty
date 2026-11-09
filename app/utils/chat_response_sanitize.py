@@ -114,3 +114,16 @@ def fallback_no_products(lang: str) -> str:
         "I couldn't find available products that match those criteria exactly. "
         "Want to widen the search — e.g. colour, budget, or style?"
     )
+
+
+def degraded_search_notice(lang: str) -> str:
+    """Shown when products came from keyword (BM25) fallback instead of semantic search."""
+    if lang == "el":
+        return (
+            "Σημείωση: η έξυπνη αναζήτηση προϊόντων είναι προσωρινά περιορισμένη, "
+            "οπότε οι προτάσεις βασίζονται σε αναζήτηση λέξεων-κλειδιών και ίσως είναι λιγότερο ακριβείς."
+        )
+    return (
+        "Note: smart product search is temporarily limited, so these suggestions are based on "
+        "keyword matching and may be less precise."
+    )
