@@ -21,6 +21,7 @@ from app.services.sync_state_service import (
     save_sync_state,
 )
 from app.services.vertex_service import VertexEmbeddingService, VertexVectorSearchService
+from app.services import es_hybrid
 from app.utils.chunking import chunk_rag_document
 from app.utils.transformers import (
     build_enriched_product_text,
@@ -61,9 +62,11 @@ class IncrementalIndexService:
         chunk_ids = [cid for cid, c in self._chunk_store.items() if c.sku == sku]
         if not chunk_ids:
             return 0
-        await self._vector_store.remove_vectors(chunk_ids)
+        if not es_hybrid.enabled():
+            await self._vector_store.remove_vectors(chunk_ids)
         for cid in chunk_ids:
             self._chunk_store.pop(cid, None)
+        await es_hybrid.remove_sku(sku)
         return len(chunk_ids)
 
     async def _process_one_product(
@@ -92,23 +95,26 @@ class IncrementalIndexService:
         removed_before = await self._remove_sku_from_index(sku)
         action = "added" if removed_before == 0 else "updated"
 
-        texts = [c.text for c in chunks]
-        embeddings = await self._embedder.embed_texts(texts)
-        ids = [c.chunk_id for c in chunks]
-        metadata_list = [
-            {
-                "sku": c.sku,
-                "name": c.name,
-                "url": c.url or "",
-                "categories": c.categories,
-                "price": str(c.price) if c.price else "",
-                "source": c.source,
-            }
-            for c in chunks
-        ]
-        await self._vector_store.upsert_vectors(ids, embeddings, metadata_list)
+        if not es_hybrid.enabled():  # ES hybrid embeds + stores vectors in Elasticsearch itself
+            texts = [c.text for c in chunks]
+            embeddings = await self._embedder.embed_texts(texts)
+            ids = [c.chunk_id for c in chunks]
+            metadata_list = [
+                {
+                    "sku": c.sku,
+                    "name": c.name,
+                    "url": c.url or "",
+                    "categories": c.categories,
+                    "price": str(c.price) if c.price else "",
+                    "source": c.source,
+                }
+                for c in chunks
+            ]
+            await self._vector_store.upsert_vectors(ids, embeddings, metadata_list)
+
         for c in chunks:
             self._chunk_store[c.chunk_id] = c
+        await es_hybrid.index_chunks(chunks)  # no-op unless ES_HYBRID_ENABLED; never raises
 
         return sku, action, len(chunks)
 

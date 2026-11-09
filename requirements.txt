@@ -12,3 +12,8 @@ apscheduler>=3.10.0,<4.0.0
 sqlalchemy>=2.0.0
 PyMySQL>=1.1.0
 slowapi>=0.1.9
+# ES hybrid search (app/services/es_hybrid) — keep ES client major == server major
+elasticsearch>=8.11,<9
+numpy>=1.26
+google-genai>=1.0
+tiktoken>=0.7

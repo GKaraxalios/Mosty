@@ -12,6 +12,7 @@ from app.models.schemas import (
     RAGSyncResponse,
     RAGSyncSingleResponse,
 )
+from app.services import es_hybrid
 from app.services.cache_service import CacheService
 from app.services.graphql_service import GraphQLService
 from app.services.vertex_service import VertexEmbeddingService, VertexVectorSearchService
@@ -83,6 +84,10 @@ class RAGIngestionService:
         chunks = chunk_rag_document(doc, full_text)
 
         texts = [c.text for c in chunks]
+        # ES hybrid embeds in es_hybrid.index_chunks (dense_vector in Elasticsearch):
+        # skip the Vertex embedding + Vertex Vector Search upsert entirely.
+        if es_hybrid.enabled():
+            return chunks, []
         embeddings = await self._embedder.embed_texts(texts)
 
         return chunks, embeddings
@@ -105,10 +110,14 @@ class RAGIngestionService:
             for c in chunks
         ]
 
-        await self._vector_store.upsert_vectors(ids, embeddings, metadata_list)
+        if not es_hybrid.enabled():
+            await self._vector_store.upsert_vectors(ids, embeddings, metadata_list)
 
         for chunk in chunks:
             _chunk_store[chunk.chunk_id] = chunk
+
+        # ES hybrid (BM25 + NumPy shards): no-op unless ES_HYBRID_ENABLED; never raises.
+        await es_hybrid.index_chunks(chunks)
 
     async def sync_all(self) -> RAGSyncResponse:
         logger.info("Starting full RAG sync…")
@@ -176,7 +185,8 @@ class RAGIngestionService:
 
         old_ids = [cid for cid, c in _chunk_store.items() if c.sku == sku]
         if old_ids:
-            await self._vector_store.remove_vectors(old_ids)
+            if not es_hybrid.enabled():
+                await self._vector_store.remove_vectors(old_ids)
             for cid in old_ids:
                 _chunk_store.pop(cid, None)
 
@@ -204,9 +214,11 @@ class RAGIngestionService:
         logger.info("Deleting RAG data for product: %s", sku)
         old_ids = [cid for cid, c in _chunk_store.items() if c.sku == sku]
         if old_ids:
-            await self._vector_store.remove_vectors(old_ids)
+            if not es_hybrid.enabled():
+                await self._vector_store.remove_vectors(old_ids)
             for cid in old_ids:
                 _chunk_store.pop(cid, None)
+        await es_hybrid.remove_sku(sku)
 
         self._cache.invalidate_product(sku)
         _save_chunk_store()

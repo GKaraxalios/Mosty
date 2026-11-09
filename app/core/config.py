@@ -72,6 +72,39 @@ class Settings(BaseSettings):
     # When True (default), if retrieval returns no usable results, retry with relaxed filters:
     # drop color → drop material/occasion/fit/style/season → drop category → drop size.
     HYBRID_RELAX_ON_EMPTY: bool = True
+    # Vector Search resilience: per-call deadline, retries for transient errors only,
+    # and how long the circuit stays open before a single recovery probe.
+    VERTEX_SEARCH_TIMEOUT_SECONDS: float = 8.0
+    VERTEX_SEARCH_MAX_RETRIES: int = 1
+    VERTEX_CIRCUIT_COOLDOWN_SECONDS: float = 60.0
+
+    # ── ES hybrid search (BM25 in Elasticsearch + NumPy vector shards + RRF) ─
+    # Off by default: HybridSearchService keeps the legacy Vertex+in-memory-BM25 path
+    # until an Elasticsearch cluster is configured. On any ES-hybrid error it falls back to legacy.
+    ES_HYBRID_ENABLED: bool = False
+    ELASTICSEARCH_URL: str = "http://127.0.0.1:9200"
+    ELASTICSEARCH_INDEX: str = "mosty_chunks"
+    ELASTICSEARCH_USER: str = ""
+    ELASTICSEARCH_PASSWORD: str = ""
+    ELASTICSEARCH_API_KEY: str = ""
+    ELASTICSEARCH_VERIFY_SSL: bool = True
+    ELASTICSEARCH_SEARCH_TIMEOUT_S: int = 12
+    ELASTICSEARCH_REQUEST_TIMEOUT_S: float = 30.0
+    # "google" | "none" (none = keyword-only, no Vertex credentials needed)
+    ES_EMBEDDING_PROVIDER: str = "google"
+    ES_EMBEDDING_MODEL: str = "text-multilingual-embedding-002"
+    ES_EMBEDDING_FALLBACK_MODEL: str = "text-multilingual-embedding-002"
+    ES_EMBEDDING_REQUEST_TIMEOUT_S: float = 15.0
+    ES_EMBEDDING_BATCH_SIZE: int = 32
+    ES_EMBEDDING_MAX_TOKENS: int = 400
+    ES_EMBEDDING_DIMS: int = 768  # must match ES_EMBEDDING_MODEL (text-multilingual-embedding-002 = 768)
+    # Where the dense leg lives: "es" (dense_vector + knn in Elasticsearch) | "numpy" (pickle shards)
+    ES_VECTOR_BACKEND: str = "es"
+    ES_HYBRID_CACHE_DIR: str = ""  # empty -> <repo>/data/es_hybrid_cache
+    ES_HYBRID_FUSION: str = "rrf"  # "rrf" | "weighted"
+    ES_RRF_K: int = 60
+    ES_KEYWORD_WEIGHT: float = 0.4
+    ES_VECTOR_WEIGHT: float = 0.6
 
     RERANK_ENABLED: bool = True
     RERANK_TOP_N: int = 20

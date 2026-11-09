@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse
 
 from app.models.schemas import (
     APIResponse,
@@ -18,11 +19,66 @@ from app.models.schemas import (
     ConversationSummaryItem,
     RAGSearchResponse,
 )
+from app.core.log_context import get_request_id
+from app.core.logging import get_logger
 from app.services.auth_service import verify_api_key
 from app.services.chat_service import ChatService
 from app.services.memory_service import get_memory_service
 
+logger = get_logger(__name__)
+
 router = APIRouter(prefix="/chat", tags=["chat"], dependencies=[Depends(verify_api_key)])
+
+
+_SAFE_MESSAGES = {
+    "upstream_unavailable": {
+        "el": "Η υπηρεσία αναζήτησης προϊόντων αντιμετωπίζει προσωρινό τεχνικό πρόβλημα. Παρακαλώ δοκιμάστε ξανά.",
+        "en": "The product search service is having a temporary problem. Please try again.",
+    },
+    "catalog_unavailable": {
+        "el": "Δεν ήταν δυνατή η ανάκτηση στοιχείων προϊόντων αυτή τη στιγμή. Παρακαλώ δοκιμάστε ξανά.",
+        "en": "Product information could not be retrieved right now. Please try again.",
+    },
+    "internal_error": {
+        "el": "Παρουσιάστηκε απρόσμενο σφάλμα. Παρακαλώ δοκιμάστε ξανά.",
+        "en": "Something went wrong. Please try again.",
+    },
+}
+
+
+def _classify_chat_error(exc: Exception) -> tuple[int, str, int | None]:
+    """Map an exception to (http_status, error_code, retry_after_ms)."""
+    from google.api_core import exceptions as gexc
+
+    if isinstance(exc, RuntimeError):
+        # Raised by the Magento GraphQL client on GraphQL-level errors.
+        return 502, "catalog_unavailable", None
+    if isinstance(exc, (gexc.ResourceExhausted, gexc.TooManyRequests)):
+        return 503, "upstream_unavailable", 5000
+    if isinstance(exc, (gexc.ServiceUnavailable, gexc.DeadlineExceeded, gexc.ServerError, TimeoutError)):
+        return 503, "upstream_unavailable", 2000
+    if isinstance(exc, gexc.GoogleAPIError):
+        # Auth, permission, not-found or invalid-config errors: retrying will not help.
+        return 502, "upstream_unavailable", None
+    return 500, "internal_error", None
+
+
+def _chat_error_response(operation: str, exc: Exception, language: str | None) -> JSONResponse:
+    status, code, retry_after_ms = _classify_chat_error(exc)
+    trace_id = get_request_id() or "-"
+    # Full technical detail stays in server logs; the client gets a safe message + trace id.
+    logger.exception(
+        "chat.response.failed operation=%s code=%s status=%d exc_type=%s",
+        operation,
+        code,
+        status,
+        type(exc).__name__,
+    )
+    lang = "en" if (language or "").lower().startswith("en") else "el"
+    error: dict = {"code": code, "message": _SAFE_MESSAGES[code][lang], "traceId": trace_id}
+    if retry_after_ms is not None:
+        error["retryAfterMs"] = retry_after_ms
+    return JSONResponse(status_code=status, content={"success": False, "error": error})
 
 
 # ── Session management ───────────────────────────────────────────────────────
@@ -135,10 +191,8 @@ async def chat_ask(body: ChatRequest) -> ChatResponse:
     svc = ChatService()
     try:
         return await svc.ask(body)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Chat ask failed: {exc}")
+        return _chat_error_response("ask", exc, body.language)
 
 
 @router.post("/search", response_model=RAGSearchResponse)
@@ -147,10 +201,8 @@ async def chat_search(body: ChatRequest) -> RAGSearchResponse:
     try:
         results = await svc.search(body)
         return RAGSearchResponse(query=body.query, results=results)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Chat search failed: {exc}")
+        return _chat_error_response("search", exc, body.language)
 
 
 @router.post("/recommend", response_model=ChatRecommendResponse)
@@ -158,10 +210,8 @@ async def chat_recommend(body: ChatRecommendRequest) -> ChatRecommendResponse:
     svc = ChatService()
     try:
         return await svc.recommend(body)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Chat recommend failed: {exc}")
+        return _chat_error_response("recommend", exc, body.language)
 
 
 @router.post("/compare", response_model=ChatCompareResponse)
@@ -169,7 +219,5 @@ async def chat_compare(body: ChatCompareRequest) -> ChatCompareResponse:
     svc = ChatService()
     try:
         return await svc.compare(body)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Chat compare failed: {exc}")
+        return _chat_error_response("compare", exc, body.language)

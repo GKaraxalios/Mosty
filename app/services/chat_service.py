@@ -70,6 +70,7 @@ from app.utils.prompt_builder import (
 )
 from app.utils.shopping_prompt_blocks import build_shopping_assistant_block
 from app.utils.chat_response_sanitize import (
+    degraded_search_notice,
     fallback_no_products,
     fallback_product_intro,
     sanitize_visible_assistant_text,
@@ -1046,6 +1047,14 @@ class ChatService:
             response_metadata = response_metadata or {}
             response_metadata["target_category"] = intent.target_category
 
+        visible_message = answer
+        if any((r.metadata or {}).get("retrieval_mode") == "lexical_fallback" for r in results):
+            response_metadata = response_metadata or {}
+            response_metadata["retrieval_mode"] = "lexical_fallback"
+            if product_cards:
+                # Appended to the response only; memory keeps the plain answer.
+                visible_message = f"{answer}\n\n{degraded_search_notice(lang)}"
+
         # For now we only expose structured location/map for explicit location intents.
         location_payload = None
         map_payload = None
@@ -1062,8 +1071,8 @@ class ChatService:
             session_id=session.session_id,
             query=request.query,
             rewritten_query=rewritten,
-            answer=answer,
-            message=answer,
+            answer=visible_message,
+            message=visible_message,
             language=lang,
             sources=_dedupe_sources(results),
             products=product_cards,

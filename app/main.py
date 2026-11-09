@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -57,6 +58,11 @@ async def lifespan(app: FastAPI):
         settings.APP_VERSION,
         settings.MAGENTO_GRAPHQL_URL,
     )
+
+    # Report a missing/undeployed Vector Search index at startup (non-blocking) rather
+    # than as a DNS error on the first chat request.
+    from app.services.vertex_service import validate_vector_search_config
+    app.state.vector_search_check = asyncio.create_task(validate_vector_search_config())
 
     # Start scheduler if enabled
     if settings.ENABLE_SCHEDULER:
